@@ -1,0 +1,34 @@
+#==============================================================================
+# RIOT TOOLING-ONLY PROJECT CONFIGURATION
+# Creates AWS VPC and EC2 instance with RIOT-X migration tools
+#==============================================================================
+
+# Project identification - CHANGE THESE VALUES
+name_prefix = "riot-tooling"        # Change to your unique prefix (lowercase, alphanumeric + hyphens only)
+owner       = "your-name"           # Change to your name/team
+project     = "riot-tooling-only"   # Project or environment name
+
+# AWS infrastructure - CHANGE THESE VALUES  
+aws_region           = "us-west-2"
+key_name             = "your-ec2-keypair-name"  # Your EC2 key pair name  
+ssh_private_key_path = "~/.ssh/your-key.pem"   # Path to your SSH private key
+
+#==============================================================================
+# OPTIONAL CONFIGURATION
+# These have sensible defaults but can be customized if needed
+#==============================================================================
+
+### Security Configuration
+# Allow SSH from specific IPs (RECOMMENDED: replace with your IP for security)
+allow_ssh_from = ["YOUR.IP.ADDRESS/32"] # For testing only, use ["0.0.0.0/0"]
+
+### Network Configuration
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
+azs                  = ["us-west-2a", "us-west-2b"]
+
+### EC2 Configuration
+# RIOT server instance type (affects Redis OSS memory capacity)
+# t3.xlarge = 16GB RAM → ~12-14GB usable for Redis OSS
+riot_instance_type = "t3.xlarge"
