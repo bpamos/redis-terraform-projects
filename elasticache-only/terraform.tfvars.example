@@ -1,0 +1,31 @@
+#==============================================================================
+# ELASTICACHE-ONLY PROJECT CONFIGURATION
+# Creates AWS VPC and ElastiCache Redis infrastructure
+#==============================================================================
+
+# Project identification - CHANGE THESE VALUES
+name_prefix = "elasticache-demo"     # Change to your unique prefix (lowercase, alphanumeric + hyphens only)
+owner       = "your-name"            # Change to your name/team
+project     = "elasticache-only-demo" # Project or environment name
+
+# AWS region
+aws_region = "us-west-2"
+
+#==============================================================================
+# OPTIONAL CONFIGURATION
+# These have sensible defaults but can be customized if needed
+#==============================================================================
+
+### Security Configuration
+# Allow SSH from specific IPs (RECOMMENDED: replace with your IP for security)
+allow_ssh_from = ["YOUR.IP.ADDRESS/32"] # For testing only, use ["0.0.0.0/0"]
+
+### Network Configuration
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
+azs                  = ["us-west-2a", "us-west-2b"]
+
+### ElastiCache Configuration
+node_type           = "cache.t3.small"  # ElastiCache instance type
+standalone_replicas = 1                 # Number of read replicas
