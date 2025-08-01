@@ -1,5 +1,8 @@
 # Local .terraform directories
 .terraform/
+TRASH/
+CLAUDE.md
+.claude/
 
 # .tfstate files
 *.tfstate
