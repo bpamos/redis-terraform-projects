@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redis Migration Control Panel</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.2em; opacity: 0.9; }
+        
+        .workflow {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0;
+            border-bottom: 3px solid #ecf0f1;
+        }
+        
+        .step {
+            padding: 30px;
+            border-right: 1px solid #ecf0f1;
+            min-height: 400px;
+            position: relative;
+        }
+        
+        .step:last-child { border-right: none; }
+        
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .step-number {
+            background: #3498db;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .step-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .step-subtitle {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        .button-group {
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background: #3498db;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            margin: 5px 5px 5px 0;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .btn-success { background: #27ae60; }
+        .btn-success:hover { background: #229954; }
+        .btn-warning { background: #f39c12; }
+        .btn-warning:hover { background: #e67e22; }
+        .btn-danger { background: #e74c3c; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-info { background: #17a2b8; }
+        .btn-info:hover { background: #138496; }
+        .btn-secondary { background: #6c757d; }
+        .btn-secondary:hover { background: #545b62; }
+        
+        .database-monitor {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #dee2e6;
+        }
+        
+        .db-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .db-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid;
+        }
+        
+        .db-card.elasticache {
+            background: #e8f5e8;
+            border-color: #28a745;
+        }
+        
+        .db-card.redis-cloud {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        .db-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .key-count {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .key-count.elasticache { color: #28a745; }
+        .key-count.redis-cloud { color: #2196f3; }
+        
+        .key-label {
+            font-size: 1em;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .demo-counter {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: monospace;
+            min-height: 60px;
+        }
+        
+        .demo-label {
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+        
+        .link-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .link-section strong {
+            color: #856404;
+        }
+        
+        .link-section a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .link-section a:hover {
+            text-decoration: underline;
+        }
+        
+        .logs-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .logs {
+            border: 1px solid #ddd;
+            padding: 20px;
+            height: 300px;
+            overflow-y: auto;
+            background: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            border-radius: 6px;
+        }
+        
+        .log-entry { margin: 5px 0; }
+        .log-success { color: #28a745; }
+        .log-error { color: #dc3545; }
+        .log-info { color: #17a2b8; }
+        .log-warning { color: #856404; }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-ready { background: #28a745; }
+        .status-warning { background: #ffc107; }
+        .status-error { background: #dc3545; }
+        
+        .step.setup { background: linear-gradient(to bottom, #fff, #f0fff4); }
+        .step.monitor { background: linear-gradient(to bottom, #fff, #f0f8ff); }
+        .step.migrate { background: linear-gradient(to bottom, #fff, #fff5f5); }
+        
+        @media (max-width: 1200px) {
+            .workflow {
+                grid-template-columns: 1fr;
+            }
+            .step {
+                border-right: none;
+                border-bottom: 1px solid #ecf0f1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 Redis Migration Control Panel</h1>
+            <p>Complete Redis migration workflow from ElastiCache to Redis Cloud</p>
+        </div>
+        
+        <div class="workflow">
+            <!-- STEP 1: SETUP -->
+            <div class="step setup">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div>
+                        <div class="step-title">Setup & Preparation</div>
+                        <div class="step-subtitle">Initialize application and load data</div>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="testFunction()" class="btn">
+                        🧪 Test System
+                    </button>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="startRedisArena()" class="btn btn-success">
+                        🚀 Start RedisArena
+                    </button>
+                    <button onclick="window.restartRedisArena()" class="btn btn-warning">
+                        🔄 Restart Application
+                    </button>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="loadSampleData()" class="btn btn-warning">
+                        📊 Load Sample Data
+                    </button>
+                </div>
+                
+                <div class="link-section">
+                    <strong>🎮 Application Access:</strong><br>
+                    <a href="#" onclick="viewApplication()">Open RedisArena →</a>
+                </div>
+                
+                <div class="link-section">
+                    <strong>📊 Monitoring:</strong><br>
+                    <a href="#" onclick="openGrafana()">RIOT-X Grafana Dashboard →</a>
+                </div>
+            </div>
+            
+            <!-- STEP 2: MONITOR -->
+            <div class="step monitor">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <div>
+                        <div class="step-title">Live Monitoring</div>
+                        <div class="step-subtitle">Track database states and replication</div>
+                    </div>
+                </div>
+                
+                <!-- RIOT Connection Controls -->
+                <div class="riot-controls" style="margin-bottom: 25px; padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 8px; border-left: 4px solid #007bff;">
+                    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                        <h4 style="margin: 0; color: #2c3e50; font-size: 1.1em;">🔗 RIOT Replication</h4>
+                        <div id="riot-status-badge" style="margin-left: 15px; padding: 4px 12px; border-radius: 20px; font-size: 0.8em; font-weight: bold; color: white; background: #6c757d;">Unknown</div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button onclick="startRiot()" class="btn btn-success" style="flex: 1; padding: 8px 16px; font-size: 0.9em;">
+                            🔗 Start Replication
+                        </button>
+                        <button onclick="stopRiot()" class="btn btn-danger" style="flex: 1; padding: 8px 16px; font-size: 0.9em;">
+                            ⏹️ Stop Replication
+                        </button>
+                        <button onclick="checkRiotStatus()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.9em;">
+                            🔄 Refresh
+                        </button>
+                    </div>
+                    <div style="font-size: 0.85em; color: #6c757d; line-height: 1.4; margin-bottom: 15px;">
+                        <strong>Step 2:</strong> Start RIOT to enable live data synchronization from ElastiCache to Redis Cloud. This allows real-time replication before migration.
+                    </div>
+                    
+                    <!-- Manual RIOT Command Reference -->
+                    <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 15px; margin-top: 10px;">
+                        <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                            <span style="color: #495057; font-weight: 600; font-size: 0.9em;">🔧 Manual RIOT Command (SSH to RIOT machine):</span>
+                        </div>
+                        <div style="background: #2d3748; color: #e2e8f0; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.8em; line-height: 1.4; overflow-x: auto;">
+                            <div style="color: #68d391; margin-bottom: 4px;"># SSH to RIOT instance, then run:</div>
+                            <div style="word-break: break-all;">riotx replicate \<br>&nbsp;&nbsp;redis://ELASTICACHE_ENDPOINT:6379 \<br>&nbsp;&nbsp;redis://:PASSWORD@REDISCLOUD_ENDPOINT \<br>&nbsp;&nbsp;--mode live --progress log</div>
+                        </div>
+                        <div style="font-size: 0.75em; color: #6c757d; margin-top: 8px;">
+                            ℹ️ Runs continuously until stopped (Ctrl+C). Provides real-time data sync from ElastiCache to Redis Cloud.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="database-monitor">
+                    <div class="db-grid">
+                        <div class="db-card elasticache">
+                            <div class="db-title">🏠 ElastiCache (Source)</div>
+                            <div class="key-count elasticache" id="elasticache-key-count">-</div>
+                            <div class="key-label">Total Keys</div>
+                            <div class="demo-counter">
+                                <div class="demo-label">🔢 Demo Counter</div>
+                                <div id="elasticache-sample-data"></div>
+                            </div>
+                            <button onclick="flushElastiCache()" class="btn btn-danger" style="margin-top: 10px; font-size: 12px;">
+                                🗑️ FLUSH Database
+                            </button>
+                        </div>
+                        
+                        <div class="db-card redis-cloud">
+                            <div class="db-title">☁️ Redis Cloud (Target)</div>
+                            <div class="key-count redis-cloud" id="redis-cloud-key-count">-</div>
+                            <div class="key-label">Total Keys</div>
+                            <div class="demo-counter">
+                                <div class="demo-label">🔢 Demo Counter</div>
+                                <div id="redis-cloud-sample-data"></div>
+                            </div>
+                            <button onclick="flushRedisCloud()" class="btn btn-danger" style="margin-top: 10px; font-size: 12px;">
+                                🗑️ FLUSH Database
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="refreshConfig()" class="btn btn-info">
+                        🔄 Refresh Status
+                    </button>
+                </div>
+            </div>
+            
+            <!-- STEP 3: MIGRATE -->
+            <div class="step migrate">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <div>
+                        <div class="step-title">Migration Control</div>
+                        <div class="step-subtitle">Execute cutover and manage migration</div>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="validateRedisCloud()" class="btn btn-secondary">
+                        🔍 Validate Redis Cloud
+                    </button>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="performCutover()" class="btn btn-danger" style="font-size: 16px; padding: 15px 25px;">
+                        🚀 PERFORM CUTOVER
+                    </button>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="window.restartRedisArena()" class="btn btn-info" style="font-size: 16px; padding: 15px 25px;">
+                        🔄 RESTART APPLICATION
+                    </button>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="performRollback()" class="btn btn-warning" style="font-size: 16px; padding: 15px 25px;">
+                        ↩️ ROLLBACK TO ELASTICACHE
+                    </button>
+                </div>
+                
+                <div class="link-section">
+                    <strong>💡 Manual Restart:</strong><br>
+                    SSH: <code style="background:#f8f9fa; padding:2px 4px; border-radius:3px;">sudo systemctl restart redisarena</code>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CONFIGURATION SECTION -->
+        <div style="padding: 30px; background: #f8f9fa; border-top: 1px solid #dee2e6;">
+            <h3 style="margin-bottom: 20px; color: #2c3e50;">📋 Configuration Status</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                <div>
+                    <h4 style="margin-bottom: 10px; color: #495057;">📄 Environment Variables</h4>
+                    <div id="config-display" style="padding: 15px; background: white; border: 1px solid #ddd; border-radius: 6px; font-family: monospace; white-space: pre-wrap; min-height: 200px; font-size: 12px;"></div>
+                </div>
+                <div>
+                    <h4 style="margin-bottom: 10px; color: #495057;">🔗 Application Connection</h4>
+                    <div id="app-code-display" style="padding: 15px; background: white; border: 1px solid #ddd; border-radius: 6px; font-family: monospace; white-space: pre-wrap; min-height: 200px; font-size: 12px;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- LOGS SECTION -->
+        <div class="logs-section">
+            <h3 style="margin-bottom: 15px; color: #2c3e50;">📋 Operation Logs</h3>
+            <div class="logs" id="logs">
+                <div class="log-info">System ready - Redis Migration Control Panel initialized</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addLog(message, type = "info") {
+            const logs = document.getElementById("logs");
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement("div");
+            entry.className = "log-entry log-" + type;
+            entry.innerHTML = time + " - " + message;
+            logs.appendChild(entry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        function testFunction() {
+            addLog("🧪 Running system test...", "info");
+            
+            fetch("/api/test")
+                .then(response => response.json())
+                .then(data => {
+                    addLog("✅ System test successful: " + data.message, "success");
+                })
+                .catch(error => {
+                    addLog("⚠️ Test completed - " + error.message.replace("Unexpected token", "check system status"), "warning");
+                });
+        }
+        
+        function startRedisArena() {
+            addLog("🚀 Starting RedisArena application...", "info");
+            
+            fetch("/api/start-redisarena", { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog("✅ " + data.message, "success");
+                    } else {
+                        addLog("❌ " + data.message, "error");
+                    }
+                })
+                .catch(error => {
+                    addLog("⚠️ Operation may have completed - " + error.message.replace("Unexpected token", "check logs for status"), "warning");
+                });
+        }
+        
+        function loadSampleData() {
+            addLog("📊 Loading sample gaming data into Redis...", "info");
+            addLog("⏳ This operation takes 2-3 minutes to complete", "warning");
+            
+            fetch("/api/load-data", { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog("✅ " + data.message, "success");
+                    } else {
+                        addLog("❌ " + data.message, "error");
+                    }
+                })
+                .catch(error => {
+                    addLog("⚠️ Operation may have completed - " + error.message.replace("Unexpected token", "check logs for status"), "warning");
+                });
+        }
+        
+        function viewApplication() {
+            addLog("🎮 Opening RedisArena application...", "info");
+            
+            fetch("/api/get-app-url")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog("✅ Opening RedisArena at " + data.url, "success");
+                        window.open(data.url, "_blank");
+                        addLog("🎮 RedisArena opened in new tab", "info");
+                    } else {
+                        addLog("❌ " + data.message, "error");
+                    }
+                })
+                .catch(error => {
+                    addLog("⚠️ Operation may have completed - " + error.message.replace("Unexpected token", "check logs for status"), "warning");
+                });
+        }
+        
+        function openGrafana() {
+            addLog("📊 Opening RIOT-X Grafana dashboard...", "info");
+            
+            fetch("/api/get-grafana-url")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog("✅ Opening Grafana at " + data.url, "success");
+                        window.open(data.url, "_blank");
+                        addLog("📊 Grafana dashboard opened in new tab", "info");
+                    } else {
+                        addLog("❌ " + data.message, "error");
+                    }
+                })
+                .catch(error => {
+                    addLog("⚠️ Could not get Grafana URL - " + error.message, "warning");
+                });
+        }
+        
+        function validateRedisCloud() {
+            addLog("🔍 Validating Redis Cloud connectivity and configuration...", "info");
+            addLog("⏳ Testing connection to migration target", "info");
+            
+            fetch("/api/validate-redis-cloud", { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog("✅ " + data.message, "success");
+                        if (data.details) {
+                            addLog("📊 " + data.details, "info");
+                        }
+                    } else {
+                        addLog("❌ " + data.message, "error");
+                    }
+                })
+                .catch(error => {
+                    addLog("⚠️ Operation may have completed - " + error.message.replace("Unexpected token", "check logs for status"), "warning");
+                });
+        }
+        
+        function performCutover() {
+            if (!confirm("⚠️ Are you sure you want to perform the cutover to Redis Cloud?\\n\\nThis will switch RedisArena from ElastiCache to Redis Cloud.")) {
+                addLog("🔄 Cutover cancelled by user", "warning");
+                return;
+            }
+            addLog("🚀 Starting migration cutover to Redis Cloud...", "info");
+            addLog("⏳ This operation may take several minutes", "warning");
+            
+            fetch("/api/perform-cutover", { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog("✅ " + data.message, "success");
+                        addLog("🎉 Migration completed! Please restart RedisArena manually: sudo systemctl restart redisarena", "success");
+                        // Auto-refresh config and database stats after cutover
+                        setTimeout(function() {
+                            refreshConfig();
+                        }, 2000);
+                    } else {
+                        addLog("❌ " + data.message, "error");
+                    }
+                })
+                .catch(error => {
+                    addLog("⚠️ Operation may have completed - " + error.message.replace("Unexpected token", "check logs for status"), "warning");
+                });
+        }
+        
+        function performRollback() {
+            if (!confirm("⚠️ Are you sure you want to rollback to ElastiCache?\\n\\nThis will switch RedisArena back from Redis Cloud to ElastiCache.")) {
+                addLog("🔄 Rollback cancelled by user", "warning");
+                return;
+            }
+            addLog("↩️ Starting rollback to ElastiCache...", "info");
+            addLog("⏳ This operation may take several minutes", "warning");
+            
+            fetch("/api/perform-rollback", { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog("✅ " + data.message, "success");
+                        addLog("🎉 Rollback completed! Please restart RedisArena manually: sudo systemctl restart redisarena", "success");
+                        // Auto-refresh config and database stats after rollback
+                        setTimeout(function() {
+                            refreshConfig();
+                        }, 2000);
+                    } else {
+                        addLog("❌ " + data.message, "error");
+                    }
+                })
+                .catch(error => {
+                    addLog("⚠️ Operation may have completed - " + error.message.replace("Unexpected token", "check logs for status"), "warning");
+                });
+        }
+        
+        function refreshDatabaseStats() {
+            fetch("/api/get-database-stats")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update ElastiCache stats
+                        document.getElementById("elasticache-key-count").textContent = data.elasticache.key_count.toLocaleString();
+                        document.getElementById("elasticache-sample-data").innerHTML = data.elasticache.demo_counter;
+                        
+                        // Update Redis Cloud stats
+                        document.getElementById("redis-cloud-key-count").textContent = data.redis_cloud.key_count.toLocaleString();
+                        document.getElementById("redis-cloud-sample-data").innerHTML = data.redis_cloud.demo_counter;
+                        
+                    } else {
+                        addLog("❌ Failed to fetch database stats: " + data.message, "error");
+                    }
+                })
+                .catch(error => {
+                    // Silent failure for auto-refresh
+                });
+        }
+        
+        function refreshConfig() {
+            addLog("📋 Refreshing configuration and database status...", "info");
+            
+            fetch("/api/get-config")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update .env file display
+                        const configDisplay = document.getElementById("config-display");
+                        configDisplay.innerHTML = data.config;
+                        
+                        // Update application code display
+                        const appCodeDisplay = document.getElementById("app-code-display");
+                        appCodeDisplay.innerHTML = data.app_connection_code;
+                        
+                        addLog("✅ Configuration and status refreshed", "success");
+                        
+                        // Also refresh database stats
+                        refreshDatabaseStats();
+                    } else {
+                        addLog("❌ Failed to fetch configuration: " + data.message, "error");
+                    }
+                })
+                .catch(error => {
+                    addLog("⚠️ Error fetching configuration - " + error.message, "warning");
+                });
+        }
+        
+        function flushElastiCache() {
+            if (!confirm("⚠️ Are you sure you want to FLUSH all data from ElastiCache?\\n\\nThis will DELETE ALL KEYS permanently!")) {
+                addLog("🔄 ElastiCache flush cancelled by user", "warning");
+                return;
+            }
+            addLog("🗑️ Flushing ElastiCache database...", "info");
+            addLog("⚠️ WARNING: This will delete ALL data!", "warning");
+            
+            fetch("/api/flush-elasticache", { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog("✅ " + data.message, "success");
+                        // Refresh database stats after flush
+                        setTimeout(function() {
+                            refreshDatabaseStats();
+                        }, 1000);
+                    } else {
+                        addLog("❌ " + data.message, "error");
+                    }
+                })
+                .catch(error => {
+                    addLog("⚠️ Flush may have completed - " + error.message, "warning");
+                });
+        }
+        
+        function flushRedisCloud() {
+            if (!confirm("⚠️ Are you sure you want to FLUSH all data from Redis Cloud?\\n\\nThis will DELETE ALL KEYS permanently!")) {
+                addLog("🔄 Redis Cloud flush cancelled by user", "warning");
+                return;
+            }
+            addLog("🗑️ Flushing Redis Cloud database...", "info");
+            addLog("⚠️ WARNING: This will delete ALL data!", "warning");
+            
+            fetch("/api/flush-redis-cloud", { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog("✅ " + data.message, "success");
+                        // Refresh database stats after flush
+                        setTimeout(function() {
+                            refreshDatabaseStats();
+                        }, 1000);
+                    } else {
+                        addLog("❌ " + data.message, "error");
+                    }
+                })
+                .catch(error => {
+                    addLog("⚠️ Flush may have completed - " + error.message, "warning");
+                });
+        }
+        
+        // Initialize page
+        document.addEventListener("DOMContentLoaded", function() {
+            addLog("🔗 Redis Migration Control Panel loaded successfully", "info");
+            addLog("📋 Ready for migration operations", "info");
+            
+            // Load initial data
+            refreshConfig();
+            
+            // Auto-refresh database stats every 1 second (silent)
+            setInterval(refreshDatabaseStats, 1000);
+            
+            // Setup restart function
+            window.restartRedisArena = function() {
+                addLog("🔄 Restarting RedisArena application...", "info");
+                fetch("/api/restart-redisarena", { method: "POST" })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            addLog("✅ " + data.message, "success");
+                            // Refresh config and stats after restart
+                            setTimeout(function() {
+                                refreshConfig();
+                            }, 1000);
+                        } else {
+                            addLog("❌ " + data.message, "error");
+                        }
+                    })
+                    .catch(error => {
+                        addLog("⚠️ Restart may have completed", "warning");
+                    });
+            };
+        });
+        
+        function checkRiotStatus() {
+            addLog("🔄 Checking RIOT status...", "info");
+            
+            fetch("/api/riot-status")
+                .then(response => response.json())
+                .then(data => {
+                    const statusElement = document.getElementById("riot-status-badge");
+                    if (data.running) {
+                        statusElement.textContent = "Running";
+                        statusElement.style.background = "#28a745";
+                        addLog("✅ RIOT is running and replicating data", "success");
+                    } else {
+                        statusElement.textContent = "Stopped";
+                        statusElement.style.background = "#dc3545";
+                        addLog("⏹️ RIOT is not running", "warning");
+                    }
+                })
+                .catch(error => {
+                    addLog("❌ Error checking RIOT status: " + error.message, "error");
+                });
+        }
+        
+        function startRiot() {
+            addLog("🔗 Starting RIOT replication connection...", "info");
+            addLog("⏳ This will enable live data sync to Redis Cloud", "warning");
+            
+            fetch("/api/start-riot", { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog("✅ " + data.message, "success");
+                        checkRiotStatus();
+                    } else {
+                        addLog("❌ " + data.message, "error");
+                    }
+                })
+                .catch(error => {
+                    addLog("❌ Error starting RIOT: " + error.message, "error");
+                });
+        }
+        
+        function stopRiot() {
+            if (!confirm("⚠️ Are you sure you want to stop RIOT replication?")) {
+                addLog("🔄 RIOT stop cancelled by user", "warning");
+                return;
+            }
+            
+            addLog("⏹️ Stopping RIOT replication...", "info");
+            
+            fetch("/api/stop-riot", { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog("✅ " + data.message, "success");
+                        checkRiotStatus();
+                    } else {
+                        addLog("❌ " + data.message, "error");
+                    }
+                })
+                .catch(error => {
+                    addLog("❌ Error stopping RIOT: " + error.message, "error");
+                });
+        }
+        
+        // Check RIOT status on page load
+        setTimeout(checkRiotStatus, 1000);
+    </script>
+</body>
+</html>

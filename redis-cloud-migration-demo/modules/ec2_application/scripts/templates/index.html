@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RedisArena - Gaming Platform</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="header">
+        <h1>🎮 RedisArena - Gaming Platform</h1>
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="live-indicator">●</span> Live Demo
+            </div>
+            <div class="stat-item">
+                Online: <span id="online-count">0</span>
+            </div>
+            <div class="stat-item">
+                Ops/sec: <span id="ops-per-second">0</span>
+            </div>
+            <div class="stat-item">
+                Demo Counter: <span id="demo-counter">0</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="panel">
+            <div class="panel-header">🏆 Live Leaderboard</div>
+            <div class="panel-content">
+                <div id="leaderboard">
+                    <div style="text-align: center; padding: 50px; opacity: 0.6;">
+                        Load data to see leaderboard
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-header">💬 Live Chat & Activity</div>
+            <div class="panel-content">
+                <div class="chat-messages" id="chat-messages">
+                    <div style="text-align: center; padding: 50px; opacity: 0.6;">
+                        Start simulation to see live activity
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-header">👤 Demo Profile</div>
+            <div class="panel-content">
+                <div class="profile-info">
+                    <div class="profile-avatar">🎮</div>
+                    <div class="profile-name">Redis Migration</div>
+                    <div class="profile-status">Demo Platform</div>
+                </div>
+                
+                <div class="profile-stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="total-players">0</div>
+                        <div class="stat-label">Total Players</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="active-games">0</div>
+                        <div class="stat-label">Active Games</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="high-score">0</div>
+                        <div class="stat-label">High Score</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="server-uptime">Ready</div>
+                        <div class="stat-label">Server Status</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <div class="workflow-notice" style="text-align: center; margin-bottom: 15px; font-size: 14px; color: #666;">
+            💡 <strong>Workflow:</strong> Load Data → Start Simulation → Stop Simulation (to load new data)
+        </div>
+        <div class="control-buttons">
+            <button class="btn btn-warning" onclick="loadData()" id="load-btn">
+                📊 Load Game Data
+            </button>
+            <button class="btn btn-primary" onclick="startSimulation()" id="start-btn" disabled>
+                ▶️ Start Simulation
+            </button>
+            <button class="btn btn-danger" onclick="stopSimulation()" id="stop-btn" disabled>
+                ⏹️ Stop Simulation
+            </button>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

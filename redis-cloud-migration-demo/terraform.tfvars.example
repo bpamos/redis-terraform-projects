@@ -1,0 +1,68 @@
+#==============================================================================
+# REQUIRED USER CONFIGURATION
+# Update these values before running terraform apply
+#==============================================================================
+
+# Project identification - CHANGE THESE VALUES
+name_prefix = "redis-demo"  # Change to your unique prefix (lowercase, alphanumeric + hyphens only)
+owner       = "your-name"   # Change to your name/team
+
+# AWS infrastructure - CHANGE THESE VALUES  
+key_name             = "your-ec2-keypair-name"              # Your EC2 key pair name  
+ssh_private_key_path = "~/.ssh/redis-migration.pem"        # Path to your SSH private key
+aws_account_id       = "YOUR_AWS_ACCOUNT_ID"               # Your AWS Account ID (12 digits)
+
+# Redis Cloud credentials - CHANGE THESE VALUES
+rediscloud_api_key    = "YOUR_REDIS_CLOUD_API_KEY"    # Your Redis Cloud API key
+rediscloud_secret_key = "YOUR_REDIS_CLOUD_SECRET_KEY" # Your Redis Cloud secret key
+
+# Redis Cloud billing - CHANGE THESE VALUES
+credit_card_type      = "Visa" # Your credit card type (Visa, Mastercard, etc.)
+credit_card_last_four = "1234" # Last 4 digits of your credit card
+
+#==============================================================================
+# OPTIONAL CONFIGURATION
+# These have sensible defaults but can be customized if needed
+#==============================================================================
+
+### Basic Settings
+aws_region = "us-west-2"
+project    = "redis-cloud-migration-demo"
+
+### Security Configuration
+# Allow SSH from specific IPs (RECOMMENDED: replace with your IP for security)
+allow_ssh_from = ["YOUR.IP.ADDRESS/32"] # For testing only, use ["0.0.0.0/0"]
+
+### Network Configuration
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
+azs                  = ["us-west-2a", "us-west-2b"]
+
+### ElastiCache Configuration
+node_type           = "cache.t3.small"
+standalone_replicas = 1
+
+### EC2 Configuration
+# RIOT server instance type (affects Redis OSS memory capacity)
+# t3.xlarge = 16GB RAM → ~12-14GB usable for Redis OSS
+riot_instance_type = "t3.xlarge"
+
+# Application server instance type (lighter workload)
+application_instance_type = "t3.medium"
+
+### Redis Cloud Configuration
+subscription_name          = "redis-demo-subscription"
+database_name              = "redis-demo-db"
+rediscloud_region          = "us-west-2"
+networking_deployment_cidr = "10.42.0.0/24"
+preferred_azs              = ["us-west-2a", "us-west-2b", "us-west-2c"]
+dataset_size_in_gb         = 1
+throughput_value           = 1000
+modules_enabled            = ["RedisJSON"]
+cloud_account_id           = 1  # Redis Labs internal cloud account (default)
+
+### Alert Configuration (disabled by default)
+enable_alerts              = false  # Set to true to enable monitoring alerts
+# dataset_size_alert_threshold = 95  # Alert when dataset reaches 95% of capacity
+# throughput_alert_threshold_percentage = 80  # Alert when throughput reaches 80% of max
