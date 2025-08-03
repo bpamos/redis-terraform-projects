@@ -7,7 +7,7 @@ This repository contains a collection of standalone Terraform projects for deplo
 ```
 redis-terraform-projects/
 ├── README.md                           # This file
-├── redis-cloud-migration-demo/         # Main reference implementation
+├── redis-cloud-migration-demo/         # Complete Redis Cloud migration workflow
 ├── elasticache-only/                   # AWS ElastiCache Redis deployment
 ├── redis-cloud-only/                   # Redis Cloud standalone deployment
 ├── redis-cloud-riot/                   # Redis Cloud + RIOT migration tools
@@ -18,7 +18,7 @@ redis-terraform-projects/
 ## Projects Overview
 
 ### 🚀 redis-cloud-migration-demo
-**Main reference implementation** - Complete Redis migration infrastructure including:
+**Complete Redis Cloud migration workflow** - End-to-end migration infrastructure including:
 - AWS VPC with public/private subnets
 - Redis Cloud subscription and database
 - AWS ElastiCache Redis cluster
@@ -93,10 +93,10 @@ Each project includes:
 
 ### Migration Scenarios
 - **Source: On-premises Redis → Target: Redis Cloud**
-  Use: `redis-cloud-riot` for complete migration pipeline
+  Use: `redis-cloud-riot` for migration pipeline
 
 - **Source: AWS ElastiCache → Target: Redis Cloud**  
-  Use: `redis-cloud-migration-demo` for full environment
+  Use: `redis-cloud-migration-demo` for complete workflow with UI
 
 - **Source: Any Redis → Target: ElastiCache**
   Use: `elasticache-only` + `riot-tooling-only`
@@ -183,18 +183,16 @@ Each project follows consistent patterns:
 - **Naming**: Consistent resource naming with prefixes
 - **Tagging**: Standard tags for resource management
 
-## Project Status
+## Available Projects
 
-All projects are fully configured and ready to deploy:
-
-| Project | Status | Features |
-|---------|--------|----------|
-| redis-cloud-migration-demo | ✅ Ready | Full migration pipeline with UI |
-| redis-cloud-only | ✅ Ready | Minimal Redis Cloud deployment |
-| redis-cloud-riot | ✅ Ready | Redis Cloud + RIOT tools |
-| riot-tooling-only | ✅ Ready | RIOT tools + local Redis OSS |
-| elasticache-only | ✅ Ready | AWS ElastiCache deployment |
-| vpc-only | ✅ Ready | Standalone VPC infrastructure |
+| Project | Features |
+|---------|----------|
+| redis-cloud-migration-demo | Complete migration workflow with UI |
+| redis-cloud-only | Minimal Redis Cloud deployment |
+| redis-cloud-riot | Redis Cloud + RIOT tools |
+| riot-tooling-only | RIOT tools + local Redis OSS |
+| elasticache-only | AWS ElastiCache deployment |
+| vpc-only | Standalone VPC infrastructure |
 
 ## Contributing
 

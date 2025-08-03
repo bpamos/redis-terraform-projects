@@ -1,8 +1,6 @@
 # Redis Cloud Migration Demo
 
-**Main reference implementation** - A comprehensive Terraform-based solution for migrating data from **AWS ElastiCache Redis** to **Redis Cloud** using **RIOT-X** with automated infrastructure provisioning and migration tools.
-
-This project serves as the complete example that other standalone projects in this repository are derived from.
+A comprehensive Terraform-based solution for migrating data from **AWS ElastiCache Redis** to **Redis Cloud** using **RIOT-X** with automated infrastructure provisioning and migration tools.
 
 ## 🚀 What This Deploys
 
