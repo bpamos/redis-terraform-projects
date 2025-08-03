@@ -7,19 +7,18 @@ This repository contains a collection of standalone Terraform projects for deplo
 ```
 redis-terraform-projects/
 ├── README.md                           # This file
-├── redis-cloud-migration-example_V2/   # Main reference implementation (not shown in directory)
+├── redis-cloud-migration-demo/         # Main reference implementation
 ├── elasticache-only/                   # AWS ElastiCache Redis deployment
 ├── redis-cloud-only/                   # Redis Cloud standalone deployment
 ├── redis-cloud-riot/                   # Redis Cloud + RIOT migration tools
 ├── riot-tooling-only/                  # RIOT tools with local Redis OSS
-├── vpc-only/                           # Standalone VPC infrastructure
-└── redis-cloud-migration-demo/         # Alternative migration demo setup
+└── vpc-only/                           # Standalone VPC infrastructure
 ```
 
 ## Projects Overview
 
 ### 🚀 redis-cloud-migration-demo
-**Migration demonstration setup** - Complete Redis migration infrastructure including:
+**Main reference implementation** - Complete Redis migration infrastructure including:
 - AWS VPC with public/private subnets
 - Redis Cloud subscription and database
 - AWS ElastiCache Redis cluster
