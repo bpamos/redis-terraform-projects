@@ -56,7 +56,6 @@ subscription_name          = "redis-demo-subscription"
 database_name              = "redis-demo-db"
 rediscloud_region          = "us-west-2"
 networking_deployment_cidr = "10.42.0.0/24"
-preferred_azs              = ["us-west-2a", "us-west-2b", "us-west-2c"]
 dataset_size_in_gb         = 1
 throughput_value           = 1000
 modules_enabled            = ["RedisJSON"]
