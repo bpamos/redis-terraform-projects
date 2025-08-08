@@ -74,13 +74,13 @@ owner                  = "your-name"               # Your name/team
 aws_region            = "us-west-2"               # Your AWS region
 key_name              = "your-ec2-key"            # Your EC2 key pair
 ssh_private_key_path  = "path/to/your/key.pem"    # Path to private key
-dns_hosted_zone_id    = "Z1234567890ABC"          # Your Route53 zone ID
+dns_hosted_zone_id    = "YOUR_ROUTE53_HOSTED_ZONE_ID"  # Your Route53 zone ID
 
 # Choose platform: "ubuntu" or "rhel"
 platform = "ubuntu"
 
-# Required: Redis Enterprise download URL
-re_download_url = "https://s3.amazonaws.com/redis-enterprise-software-downloads/7.22.0/redislabs-7.22.0-28-jammy-amd64.tar"
+# Required: Redis Enterprise download URL (get from Redis documentation)
+re_download_url = "REPLACE_WITH_YOUR_REDIS_ENTERPRISE_DOWNLOAD_URL"
 
 # Security: Update with strong credentials
 cluster_username = "admin@your-domain.com"
@@ -111,11 +111,11 @@ Choose between Ubuntu 22.04 LTS or RHEL 9:
 ```hcl
 # Ubuntu (recommended for testing)
 platform = "ubuntu"
-re_download_url = "https://s3.amazonaws.com/redis-enterprise-software-downloads/7.22.0/redislabs-7.22.0-28-jammy-amd64.tar"
+re_download_url = "REPLACE_WITH_UBUNTU_REDIS_ENTERPRISE_DOWNLOAD_URL"
 
 # RHEL 9 (enterprise production)
 platform = "rhel" 
-re_download_url = "https://s3.amazonaws.com/redis-enterprise-software-downloads/7.22.0/redislabs-7.22.0-216-rhel9-x86_64.tar"
+re_download_url = "REPLACE_WITH_RHEL_REDIS_ENTERPRISE_DOWNLOAD_URL"
 ```
 
 ### Getting Redis Enterprise Download URLs
@@ -231,26 +231,10 @@ redis-cli -h demo-12000.your-prefix.your-domain.com -p 12000
    aws route53 list-hosted-zones
    ```
 
-2. **Connection Refused**
+2. **Service Issues**
    ```bash
-   # Check security groups
-   aws ec2 describe-security-groups --group-ids <sg-id>
-   
-   # Verify Redis Enterprise status
+   # Check Redis Enterprise cluster status
    ssh -i key.pem ubuntu@node-ip 'sudo /opt/redislabs/bin/rladmin status'
-   ```
-
-3. **Replication Link Down**
-   - Automatic fix: Security groups include required replication ports (20000-29999)
-   - Check: `rladmin status` should show "OK" for replication
-
-4. **Platform-specific Issues**
-   ```bash
-   # Ubuntu: Check package installation
-   ssh -i key.pem ubuntu@node-ip 'dpkg -l | grep redis'
-   
-   # RHEL: Check package installation  
-   ssh -i key.pem ec2-user@node-ip 'rpm -qa | grep redis'
    ```
 
 ### Log Locations
