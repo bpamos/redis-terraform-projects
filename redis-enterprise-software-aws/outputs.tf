@@ -34,21 +34,21 @@ output "availability_zones" {
 output "redis_enterprise_cluster_nodes" {
   description = "Information about Redis Enterprise cluster nodes"
   value = {
-    instance_ids  = module.redis_enterprise_cluster.instance_ids
-    public_ips    = module.redis_enterprise_cluster.public_ips
-    private_ips   = module.redis_enterprise_cluster.private_ips
-    public_dns    = module.redis_enterprise_cluster.public_dns
+    instance_ids  = module.redis_instances.instance_ids
+    public_ips    = module.redis_instances.public_ips
+    private_ips   = module.redis_instances.private_ips
+    public_dns    = module.redis_instances.public_dns
   }
 }
 
 output "cluster_ui_url" {
   description = "URL to access Redis Enterprise cluster UI"
-  value       = module.dns.redis_ui_url != null ? module.dns.redis_ui_url : "https://${module.redis_enterprise_cluster.public_ips[0]}:8443"
+  value       = module.dns.redis_ui_url != null ? module.dns.redis_ui_url : "https://${module.redis_instances.public_ips[0]}:8443"
 }
 
 output "cluster_api_url" {
   description = "URL for Redis Enterprise cluster API"
-  value       = module.dns.redis_api_url != null ? module.dns.redis_api_url : "https://${module.redis_enterprise_cluster.public_ips[0]}:9443"
+  value       = module.dns.redis_api_url != null ? module.dns.redis_api_url : "https://${module.redis_instances.public_ips[0]}:9443"
 }
 
 # =============================================================================
@@ -72,15 +72,15 @@ output "dns_records" {
 output "ssh_commands" {
   description = "SSH commands to connect to each cluster node"
   value = {
-    for i in range(length(module.redis_enterprise_cluster.public_ips)) :
-    "node-${i + 1}" => "ssh -i ${var.ssh_private_key_path} ubuntu@${module.redis_enterprise_cluster.public_ips[i]}"
+    for i in range(length(module.redis_instances.public_ips)) :
+    "node-${i + 1}" => "ssh -i ${var.ssh_private_key_path} ${module.ami_selection.ssh_user}@${module.redis_instances.public_ips[i]}"
   }
 }
 
 output "cluster_connection_info" {
   description = "Redis Enterprise cluster connection information"
   value = {
-    cluster_fqdn = module.redis_enterprise_cluster.public_dns[0]
+    cluster_fqdn = module.cluster_bootstrap.cluster_fqdn
     ui_port     = 8443
     api_port    = 9443
     username    = var.cluster_username
@@ -96,10 +96,10 @@ output "cluster_connection_info" {
 output "useful_commands" {
   description = "Useful commands for managing the Redis Enterprise cluster"
   value = {
-    check_cluster_status = "ssh -i ${var.ssh_private_key_path} ubuntu@${module.redis_enterprise_cluster.public_ips[0]} 'sudo /opt/redislabs/bin/rladmin status'"
-    view_cluster_info    = "ssh -i ${var.ssh_private_key_path} ubuntu@${module.redis_enterprise_cluster.public_ips[0]} 'sudo /opt/redislabs/bin/rladmin info cluster'"
-    list_databases       = "ssh -i ${var.ssh_private_key_path} ubuntu@${module.redis_enterprise_cluster.public_ips[0]} 'sudo /opt/redislabs/bin/rladmin status databases'"
-    cluster_logs         = "ssh -i ${var.ssh_private_key_path} ubuntu@${module.redis_enterprise_cluster.public_ips[0]} 'sudo tail -f /var/opt/redislabs/log/supervisor/*.log'"
+    check_cluster_status = "ssh -i ${var.ssh_private_key_path} ${module.ami_selection.ssh_user}@${module.redis_instances.public_ips[0]} 'sudo /opt/redislabs/bin/rladmin status'"
+    view_cluster_info    = "ssh -i ${var.ssh_private_key_path} ${module.ami_selection.ssh_user}@${module.redis_instances.public_ips[0]} 'sudo /opt/redislabs/bin/rladmin info cluster'"
+    list_databases       = "ssh -i ${var.ssh_private_key_path} ${module.ami_selection.ssh_user}@${module.redis_instances.public_ips[0]} 'sudo /opt/redislabs/bin/rladmin status databases'"
+    cluster_logs         = "ssh -i ${var.ssh_private_key_path} ${module.ami_selection.ssh_user}@${module.redis_instances.public_ips[0]} 'sudo tail -f /var/opt/redislabs/log/supervisor/*.log'"
   }
 }
 
@@ -109,27 +109,27 @@ output "useful_commands" {
 
 output "sample_database_info" {
   description = "Information about the sample Redis database"
-  value       = module.redis_enterprise_cluster.sample_database_info
+  value       = module.database_management.sample_database_info
 }
 
 output "sample_database_endpoint" {
   description = "External endpoint for connecting to the sample Redis database"
-  value       = module.redis_enterprise_cluster.sample_database_endpoint
+  value       = module.database_management.sample_database_endpoint
 }
 
 output "sample_database_endpoint_private" {
   description = "Private endpoint for connecting to the sample Redis database from within VPC"
-  value       = module.redis_enterprise_cluster.sample_database_endpoint_private
+  value       = module.database_management.sample_database_endpoint_private
 }
 
 output "redis_connection_examples" {
   description = "Example commands for connecting to the Redis database"
   value = var.create_sample_database ? {
-    redis_cli_external  = "redis-cli -h ${module.redis_enterprise_cluster.sample_database_endpoint != null ? split(":", module.redis_enterprise_cluster.sample_database_endpoint)[0] : "N/A"} -p ${var.sample_db_port}"
-    redis_cli_private   = "redis-cli -h ${module.redis_enterprise_cluster.sample_database_endpoint_private != null ? split(":", module.redis_enterprise_cluster.sample_database_endpoint_private)[0] : "N/A"} -p ${var.sample_db_port}"
-    redis_cli_direct_ip = "redis-cli -h ${module.redis_enterprise_cluster.public_ips[0]} -p ${var.sample_db_port}"
-    test_external       = "redis-cli -h ${module.redis_enterprise_cluster.sample_database_endpoint != null ? split(":", module.redis_enterprise_cluster.sample_database_endpoint)[0] : "N/A"} -p ${var.sample_db_port} ping"
-    test_private        = "redis-cli -h ${module.redis_enterprise_cluster.sample_database_endpoint_private != null ? split(":", module.redis_enterprise_cluster.sample_database_endpoint_private)[0] : "N/A"} -p ${var.sample_db_port} ping"
+    redis_cli_external  = "redis-cli -h ${module.database_management.sample_database_endpoint != null ? split(":", module.database_management.sample_database_endpoint)[0] : "N/A"} -p ${var.sample_db_port}"
+    redis_cli_private   = "redis-cli -h ${module.database_management.sample_database_endpoint_private != null ? split(":", module.database_management.sample_database_endpoint_private)[0] : "N/A"} -p ${var.sample_db_port}"
+    redis_cli_direct_ip = "redis-cli -h ${module.redis_instances.public_ips[0]} -p ${var.sample_db_port}"
+    test_external       = "redis-cli -h ${module.database_management.sample_database_endpoint != null ? split(":", module.database_management.sample_database_endpoint)[0] : "N/A"} -p ${var.sample_db_port} ping"
+    test_private        = "redis-cli -h ${module.database_management.sample_database_endpoint_private != null ? split(":", module.database_management.sample_database_endpoint_private)[0] : "N/A"} -p ${var.sample_db_port} ping"
   } : null
 }
 
@@ -152,8 +152,8 @@ output "cluster_credentials" {
   value = {
     username = var.cluster_username
     password = var.cluster_password
-    ui_url   = module.dns.redis_ui_url != null ? module.dns.redis_ui_url : "https://${module.redis_enterprise_cluster.public_ips[0]}:8443"
-    api_url  = module.dns.redis_api_url != null ? module.dns.redis_api_url : "https://${module.redis_enterprise_cluster.public_ips[0]}:9443"
+    ui_url   = module.dns.redis_ui_url != null ? module.dns.redis_ui_url : "https://${module.redis_instances.public_ips[0]}:8443"
+    api_url  = module.dns.redis_api_url != null ? module.dns.redis_api_url : "https://${module.redis_instances.public_ips[0]}:9443"
   }
   sensitive = true
 }

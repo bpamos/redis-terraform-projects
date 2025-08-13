@@ -1,101 +1,132 @@
 #==============================================================================
-# REDIS ENTERPRISE SOFTWARE AWS PROJECT CONFIGURATION - EXAMPLE
+# REDIS ENTERPRISE SOFTWARE AWS - REQUIRED CONFIGURATION
 # Copy this file to terraform.tfvars and update these values before deployment
 #==============================================================================
 
-# Project identification - UPDATE THESE VALUES
-name_prefix = "your-unique-prefix"  # Change to your unique prefix (lowercase, alphanumeric + hyphens only)
-owner       = "your-name-or-team"   # Change to your name/team
-project     = "redis-enterprise-software-aws"
-
-# AWS infrastructure - UPDATE THESE VALUES  
-aws_region            = "us-west-2"
-key_name              = "your-ec2-key-name"                    # Your EC2 key pair name
-ssh_private_key_path  = "path/to/your/private-key.pem"        # Path to your SSH private key
-
 #==============================================================================
-# NETWORK CONFIGURATION
+# ⚠️  REQUIRED VALUES - MUST BE CHANGED BEFORE DEPLOYMENT
 #==============================================================================
 
-### VPC and Subnet Configuration
+# Project identification (REQUIRED)
+name_prefix = "your-unique-prefix"    # CHANGE: Your unique prefix (lowercase, alphanumeric + hyphens)
+owner       = "your-name-or-team"     # CHANGE: Your name/team
+
+# AWS Configuration (REQUIRED)
+aws_region            = "us-west-2"                      # CHANGE: Your preferred AWS region
+key_name              = "your-ec2-key-name"              # CHANGE: Your EC2 key pair name
+ssh_private_key_path  = "path/to/your/private-key.pem"   # CHANGE: Path to your SSH private key
+
+# DNS Configuration (REQUIRED)
+dns_hosted_zone_id = "YOUR_ROUTE53_HOSTED_ZONE_ID"       # CHANGE: Your Route53 hosted zone ID
+
+# Redis Enterprise Software (REQUIRED)
+# Visit: https://redis.io/docs/latest/operate/rs/installing-upgrading/install/plan-deployment/supported-platforms/
+# Find the latest download URL for your platform and paste it below
+re_download_url = "REPLACE_WITH_YOUR_REDIS_ENTERPRISE_DOWNLOAD_URL"
+
+# Cluster Credentials (REQUIRED - Use Secure Passwords!)
+cluster_username = "admin@your-domain.com"    # CHANGE: Your admin email
+cluster_password = "YourSecurePassword123!"   # CHANGE: Strong password (min 8 chars)
+
+# Security (RECOMMENDED)
+# For testing only: use ["0.0.0.0/0"] for open access
+allow_ssh_from = ["YOUR.PUBLIC.IP.ADDRESS/32"]  # CHANGE: Your public IP for SSH access
+
+#==============================================================================
+# CLUSTER CONFIGURATION (Optional - Good defaults provided)
+#==============================================================================
+
+# Basic Settings
+project = "redis-enterprise-software-aws"
+
+# Cluster Size and Performance
+node_count     = 3               # Number of Redis nodes (minimum 3)
+instance_type  = "t3.xlarge"     # EC2 instance type (16GB RAM - good for testing)
+node_root_size = 50              # Root disk size in GB
+
+# Platform Selection
+platform = "ubuntu"              # Choose: "ubuntu" or "rhel"
+
+# High Availability
+rack_awareness = true             # Enable rack/zone awareness for HA
+flash_enabled  = false           # Enable Redis on Flash (RoF) - optional
+
+#==============================================================================
+# NETWORK CONFIGURATION (Optional - Good defaults provided)
+#==============================================================================
+
+# VPC and Subnets (will be created for you)
 vpc_cidr             = "10.0.0.0/16"
 public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
 private_subnet_cidrs = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
 
-### Security Configuration
-# Allow SSH from specific IPs (recommended: replace with your IP)
-allow_ssh_from = ["0.0.0.0/0"] # For production, use ["YOUR.IP.ADDRESS/32"]
-
-### DNS Configuration - UPDATE THESE VALUES
-dns_hosted_zone_id = "YOUR_ROUTE53_HOSTED_ZONE_ID"           # Your Route53 hosted zone ID
-cluster_fqdn       = "redis-cluster"                         # Internal cluster FQDN (used for NS records)
-create_dns_records = true                                     # Create DNS A records for cluster nodes
-
-# NOTE: Your cluster UI will be accessible at: name_prefix.your-domain.com:8443
-# Example: If name_prefix="bamos-redis-ent" and domain="redisdemo.com", 
-#          UI will be at: https://bamos-redis-ent.redisdemo.com:8443
-#          Nodes will be:  node1.bamos-redis-ent.redisdemo.com, node2.bamos-redis-ent.redisdemo.com, etc.
+# DNS Settings
+cluster_fqdn       = "redis-cluster"  # Internal cluster FQDN (used for NS records)
+create_dns_records = true             # Create DNS records automatically
 
 #==============================================================================
-# REDIS ENTERPRISE CLUSTER CONFIGURATION
+# STORAGE CONFIGURATION (Optional - Good defaults provided)
 #==============================================================================
 
-### Cluster Size and Instance Configuration
-node_count     = 3               # Number of Redis Enterprise nodes (3-9)
-instance_type  = "t3.xlarge"     # EC2 instance type for cluster nodes (16GB RAM for testing)
-node_root_size = 50              # Root EBS volume size in GB
-
-### EBS Storage Configuration (based on RAM requirements)
-data_volume_size       = 64      # Data volume size in GB (RAM x 4 = 16GB x 4 = 64GB)
+# EBS Storage (based on RAM requirements)
+data_volume_size       = 64      # Data volume size in GB (RAM x 4)
 data_volume_type       = "gp3"   # EBS volume type for data storage
-persistent_volume_size = 64      # Persistent volume size in GB (RAM x 4 = 16GB x 4 = 64GB)  
+persistent_volume_size = 64      # Persistent volume size in GB (RAM x 4)
 persistent_volume_type = "gp3"   # EBS volume type for persistent storage
 ebs_encryption_enabled = true    # Enable EBS encryption
 
-### Redis Enterprise Software Configuration
-platform = "ubuntu"                                           # Operating system platform: "ubuntu" or "rhel"
-
-# REQUIRED: Redis Enterprise download URL - choose based on your platform and desired version
-# Visit https://redis.io/docs/latest/operate/rs/installing-upgrading/install/plan-deployment/supported-platforms/
-# for the latest available versions and download URLs
-
-# Find the latest download URL for your platform and desired version at:
-# https://redis.io/docs/latest/operate/rs/installing-upgrading/install/plan-deployment/supported-platforms/
-re_download_url = "REPLACE_WITH_YOUR_REDIS_ENTERPRISE_DOWNLOAD_URL"
-
-# IMPORTANT: Update these with secure credentials
-cluster_username = "admin@your-domain.com"   # Cluster admin username (email format)
-cluster_password = "YourSecurePassword123!"  # Cluster admin password (minimum 8 characters, use strong password)
-
-### Advanced Configuration
-flash_enabled  = false          # Enable Redis on Flash (RoF) for cost optimization
-rack_awareness = true           # Enable rack/zone awareness for high availability
-
 #==============================================================================
-# SAMPLE DATABASE CONFIGURATION
+# SAMPLE DATABASE CONFIGURATION (Optional - Good defaults provided)
 #==============================================================================
 
-### Automatic Database Creation
-create_sample_database = true               # Create a sample Redis database automatically
-sample_db_name        = "demo"              # Name for the sample database
-sample_db_port        = 12000               # Port for the sample database (10000-19999)
-sample_db_memory      = 100                 # Memory size in MB for the sample database
+# Automatic Database Creation
+create_sample_database = true    # Create a demo database for testing
+sample_db_name        = "demo"   # Database name
+sample_db_port        = 12000    # Database port (10000-19999)
+sample_db_memory      = 100      # Memory size in MB
 
-### Resource Tagging
+#==============================================================================
+# RESOURCE TAGGING (Optional - Customize as needed)
+#==============================================================================
+
 tags = {
   environment = "demo"
   purpose     = "redis-enterprise-testing"
 }
 
 #==============================================================================
-# SECURITY NOTES
+# 🔗 HELPFUL INFORMATION
 #==============================================================================
 # 
-# 1. Never commit terraform.tfvars to version control - it contains sensitive data
-# 2. Use strong, unique passwords for cluster_password
-# 3. Store SSH private keys securely outside the project directory
-# 4. Consider using AWS Systems Manager Parameter Store for sensitive values
-# 5. Restrict allow_ssh_from to your specific IP address for production
-# 6. Keep your Route53 hosted zone ID confidential
+# After deployment, your cluster will be accessible at:
+# • UI Access:  https://name-prefix.your-domain.com:8443
+# • API Access: https://name-prefix.your-domain.com:9443
+# 
+# Database endpoints will be created as:
+# • External: redis-12000.name-prefix.your-domain.com:12000
+# • Internal: redis-12000-internal.name-prefix.your-domain.com:12000
+#
+# Example with name_prefix="my-redis" and domain="example.com":
+# • UI:       https://my-redis.example.com:8443
+# • Database: redis-12000.my-redis.example.com:12000 (public)
+# • Database: redis-12000-internal.my-redis.example.com:12000 (private/VPC)
+#
+#==============================================================================
+# 🔒 SECURITY REMINDERS
+#==============================================================================
+# 
+# ✅ DO:
+# • Use strong, unique passwords
+# • Store SSH keys securely 
+# • Restrict SSH access to your IP
+# • Keep hosted zone ID confidential
+# • Never commit terraform.tfvars to git
+# 
+# ⚠️  PRODUCTION:
+# • Use AWS Systems Manager for secrets
+# • Enable additional monitoring
+# • Configure backup strategies
+# • Review security group rules
+# • Consider private subnets for nodes
 #
 #==============================================================================

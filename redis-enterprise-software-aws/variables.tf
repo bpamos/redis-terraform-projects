@@ -178,8 +178,8 @@ variable "node_count" {
   default     = 3
 
   validation {
-    condition     = var.node_count >= 3 && var.node_count <= 9
-    error_message = "Node count must be between 3 and 9 for Redis Enterprise cluster."
+    condition     = var.node_count >= 3
+    error_message = "Node count must be at least 3 for Redis Enterprise cluster."
   }
 }
 
@@ -187,71 +187,36 @@ variable "instance_type" {
   description = "EC2 instance type for Redis Enterprise nodes"
   type        = string
   default     = "t3.xlarge"
-
-  validation {
-    condition = contains([
-      "t3.large", "t3.xlarge", "t3.2xlarge",
-      "m5.large", "m5.xlarge", "m5.2xlarge", "m5.4xlarge",
-      "c5.large", "c5.xlarge", "c5.2xlarge", "c5.4xlarge",
-      "r5.large", "r5.xlarge", "r5.2xlarge", "r5.4xlarge"
-    ], var.instance_type)
-    error_message = "Instance type must be appropriate for Redis Enterprise workloads."
-  }
 }
 
 variable "node_root_size" {
   description = "Root EBS volume size in GB for Redis Enterprise nodes"
   type        = number
   default     = 50
-
-  validation {
-    condition     = var.node_root_size >= 50 && var.node_root_size <= 1000
-    error_message = "Root volume size must be between 50 and 1000 GB."
-  }
 }
 
 variable "data_volume_size" {
   description = "Size of data EBS volume in GB (should be RAM x 4 for testing)"
   type        = number
   default     = 64
-
-  validation {
-    condition     = var.data_volume_size >= 32 && var.data_volume_size <= 16384
-    error_message = "Data volume size must be between 32 and 16384 GB."
-  }
 }
 
 variable "data_volume_type" {
   description = "EBS volume type for data storage"
   type        = string
   default     = "gp3"
-
-  validation {
-    condition     = contains(["gp3", "gp2", "io1", "io2"], var.data_volume_type)
-    error_message = "Data volume type must be one of: gp3, gp2, io1, io2."
-  }
 }
 
 variable "persistent_volume_size" {
   description = "Size of persistent EBS volume in GB (should be RAM x 4 for testing)"
   type        = number
   default     = 64
-
-  validation {
-    condition     = var.persistent_volume_size >= 32 && var.persistent_volume_size <= 16384
-    error_message = "Persistent volume size must be between 32 and 16384 GB."
-  }
 }
 
 variable "persistent_volume_type" {
   description = "EBS volume type for persistent storage"
   type        = string
   default     = "gp3"
-
-  validation {
-    condition     = contains(["gp3", "gp2", "io1", "io2"], var.persistent_volume_type)
-    error_message = "Persistent volume type must be one of: gp3, gp2, io1, io2."
-  }
 }
 
 variable "ebs_encryption_enabled" {
