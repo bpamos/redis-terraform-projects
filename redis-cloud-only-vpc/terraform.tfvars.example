@@ -4,9 +4,9 @@
 #==============================================================================
 
 # Project identification - CHANGE THESE VALUES
-name_prefix = "redis-riot-demo"     # Change to your unique prefix (lowercase, alphanumeric + hyphens only)
+name_prefix = "redis-demo"     # Change to your unique prefix (lowercase, alphanumeric + hyphens only)
 owner       = "your-name"           # Change to your name/team
-project     = "redis-cloud-riot-demo" # Project or environment name
+project     = "redis-cloud-demo" # Project or environment name
 
 # AWS infrastructure - CHANGE THESE VALUES  
 aws_region           = "us-west-2"
@@ -43,8 +43,8 @@ peer_cidr_block            = "10.42.0.0/24"
 riot_instance_type = "t3.xlarge"  # 16GB RAM for Redis OSS
 
 ### Redis Cloud Configuration
-subscription_name          = "redis-riot-subscription"
-database_name              = "redis-riot-db"
+subscription_name          = "redis-subscription"
+database_name              = "redis-db"
 rediscloud_region          = "us-west-2"
 networking_deployment_cidr = "10.42.0.0/24"
 # preferred_azs              = []  # Leave empty for auto-selection (recommended)
@@ -75,5 +75,5 @@ enable_alerts              = false  # Set to true to enable monitoring alerts
 ### Additional Tags
 tags = {
   Environment = "demo"
-  Purpose     = "redis-migration-with-riot"
+  Purpose     = "redis-cloud"
 }
