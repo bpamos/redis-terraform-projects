@@ -17,16 +17,16 @@ Creates a basic AWS VPC with public and private subnets, perfect for VPC peering
 module "vpc" {
   source = "./modules/vpc"
   
-  name_prefix = "redis-migration"
+  name_prefix = "redis-vpc-demo"
   vpc_cidr    = "10.0.0.0/16"
   
   public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
-  private_subnet_cidrs = ["10.0.10.0/24", "10.0.20.0/24"]
+  private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
   azs                  = ["us-west-2a", "us-west-2b"]
   
   tags = {
-    Environment = "production"
-    Project     = "redis-migration"
+    Environment = "demo"
+    Project     = "redis-cloud-vpc"
   }
 }
 ```
@@ -54,7 +54,7 @@ module "vpc" {
 ## Perfect For
 
 - **VPC Peering** - Simple structure makes peering easy
-- **Redis Migration** - Public subnets for RIOT EC2, private for databases
+- **Redis Cloud Connectivity** - Private subnets for secure database connections
 - **Basic Networking** - No complex NAT gateways or endpoints
 - **Cost Optimization** - Only creates essential resources
 

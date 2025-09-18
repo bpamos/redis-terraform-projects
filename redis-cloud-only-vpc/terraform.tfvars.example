@@ -1,18 +1,16 @@
 #==============================================================================
-# REDIS CLOUD + RIOT PROJECT CONFIGURATION
-# Creates Redis Cloud, AWS VPC, and RIOT tooling for migration
+# REDIS CLOUD + VPC PROJECT CONFIGURATION
+# Creates Redis Cloud deployment with AWS VPC and secure VPC peering
 #==============================================================================
 
 # Project identification - CHANGE THESE VALUES
-name_prefix = "redis-demo"     # Change to your unique prefix (lowercase, alphanumeric + hyphens only)
-owner       = "your-name"           # Change to your name/team
-project     = "redis-cloud-demo" # Project or environment name
+name_prefix = "redis-vpc-demo"     # Change to your unique prefix (lowercase, alphanumeric + hyphens only)
+owner       = "your-name"          # Change to your name/team
+project     = "redis-cloud-vpc-demo" # Project or environment name
 
 # AWS infrastructure - CHANGE THESE VALUES  
 aws_region           = "us-west-2"
 aws_account_id       = "YOUR_AWS_ACCOUNT_ID"               # Your AWS Account ID (12 digits)
-key_name             = "your-ec2-keypair-name"             # Your EC2 key pair name  
-ssh_private_key_path = "~/.ssh/your-key.pem"              # Path to your SSH private key
 
 # Redis Cloud credentials - CHANGE THESE VALUES
 rediscloud_api_key    = "YOUR_REDIS_CLOUD_API_KEY"    # Your Redis Cloud API key
@@ -27,10 +25,6 @@ credit_card_last_four = "1234" # Last 4 digits of your credit card
 # These have sensible defaults but can be customized if needed
 #==============================================================================
 
-### Security Configuration
-# Allow SSH from specific IPs (RECOMMENDED: replace with your IP for security)
-allow_ssh_from = ["YOUR.IP.ADDRESS/32"] # For testing only, use ["0.0.0.0/0"]
-
 ### Network Configuration
 vpc_cidr                   = "10.0.0.0/16"
 public_subnet_cidrs        = ["10.0.1.0/24", "10.0.2.0/24"]
@@ -38,13 +32,9 @@ private_subnet_cidrs       = ["10.0.3.0/24", "10.0.4.0/24"]
 azs                        = ["us-west-2a", "us-west-2b"]
 peer_cidr_block            = "10.42.0.0/24"
 
-### EC2 Configuration
-# RIOT server instance type (affects Redis OSS memory capacity)
-riot_instance_type = "t3.xlarge"  # 16GB RAM for Redis OSS
-
 ### Redis Cloud Configuration
-subscription_name          = "redis-subscription"
-database_name              = "redis-db"
+subscription_name          = "redis-vpc-subscription"
+database_name              = "redis-vpc-db"
 rediscloud_region          = "us-west-2"
 networking_deployment_cidr = "10.42.0.0/24"
 # preferred_azs              = []  # Leave empty for auto-selection (recommended)
@@ -75,5 +65,5 @@ enable_alerts              = false  # Set to true to enable monitoring alerts
 ### Additional Tags
 tags = {
   Environment = "demo"
-  Purpose     = "redis-cloud"
+  Purpose     = "redis-cloud-vpc"
 }

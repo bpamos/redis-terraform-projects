@@ -1,22 +1,18 @@
-# Redis Cloud + RIOT Terraform Project
+# Redis Cloud + VPC Terraform Project
 
-This project creates a complete Redis migration environment with Redis Cloud, AWS VPC infrastructure, and RIOT-X tooling for data migration and replication.
+This project creates a Redis Cloud deployment with AWS VPC infrastructure and secure VPC peering for private connectivity.
 
 ## What This Creates
 
 - **AWS VPC**: Complete networking infrastructure with public/private subnets
-- **Redis Cloud**: Managed Redis Enterprise subscription and database
-- **VPC Peering**: Secure connection between AWS VPC and Redis Cloud
-- **RIOT EC2 Instance**: EC2 instance with RIOT-X tools pre-installed
-- **Redis OSS**: Local Redis instance on RIOT server for staging
-- **Security Groups**: Properly configured security for all components
+- **Redis Cloud**: Managed Redis Enterprise subscription and database  
+- **VPC Peering**: Secure private connection between AWS VPC and Redis Cloud
 
 ## Prerequisites
 
 - AWS CLI configured with appropriate credentials
 - Redis Cloud account and API credentials
 - Terraform >= 1.0 installed
-- EC2 key pair for SSH access
 - Valid payment method in Redis Cloud
 
 ## Quick Start
@@ -41,7 +37,7 @@ This project creates a complete Redis migration environment with Redis Cloud, AW
 
 4. **Get connection details**:
    ```bash
-   terraform output ssh_command
+   terraform output redis_cloud_connection_info
    terraform output -raw redis_cloud_cli_command
    ```
 
@@ -52,8 +48,6 @@ This project creates a complete Redis migration environment with Redis Cloud, AW
 - `name_prefix`: Unique prefix for all resources
 - `owner`: Your name or team identifier
 - `aws_account_id`: Your AWS Account ID (12 digits)
-- `key_name`: EC2 key pair name for SSH access
-- `ssh_private_key_path`: Path to your SSH private key
 - `rediscloud_api_key`: Redis Cloud API key
 - `rediscloud_secret_key`: Redis Cloud secret key
 - `credit_card_type`: Payment method type
@@ -62,22 +56,25 @@ This project creates a complete Redis migration environment with Redis Cloud, AW
 ### Optional Variables
 
 - `aws_region`: AWS region (default: us-west-2)
-- `riot_instance_type`: RIOT server size (default: t3.xlarge)
 - `dataset_size_in_gb`: Expected dataset size (default: 1GB)
 - `modules_enabled`: Redis modules (default: ["RedisJSON"])
-- `allow_ssh_from`: SSH access CIDRs
+- `vpc_cidr`: VPC CIDR block (default: 10.0.0.0/16)
 
 ## Architecture
 
 ```
 ┌─────────────────┐    ┌──────────────────┐
 │   AWS VPC       │    │   Redis Cloud    │
+│   10.0.0.0/16   │    │   10.42.0.0/24   │
 │                 │    │                  │
 │ ┌─────────────┐ │    │ ┌──────────────┐ │
-│ │ RIOT EC2    │ │◄──►│ │ Redis        │ │
-│ │ - RIOT-X    │ │    │ │ Database     │ │
-│ │ - Redis OSS │ │    │ │              │ │
-│ │ - Grafana   │ │    │ └──────────────┘ │
+│ │ Private     │ │◄──►│ │ Redis        │ │
+│ │ Subnets     │ │    │ │ Database     │ │
+│ │             │ │    │ │              │ │
+│ └─────────────┘ │    │ └──────────────┘ │
+│ ┌─────────────┐ │    │                  │
+│ │ Public      │ │    │                  │
+│ │ Subnets     │ │    │                  │
 │ └─────────────┘ │    │                  │
 └─────────────────┘    └──────────────────┘
         │                       │
@@ -86,165 +83,91 @@ This project creates a complete Redis migration environment with Redis Cloud, AW
 
 ## Usage
 
-### Connecting to RIOT Instance
-
-```bash
-# SSH to RIOT instance
-terraform output -raw ssh_command | bash
-
-# Once connected, check RIOT-X installation
-riotx --version
-
-# Check Redis OSS
-redis-cli ping
-```
-
 ### Connecting to Redis Cloud
 
-```bash
-# From your local machine
-terraform output -raw redis_cloud_cli_command | bash
+From any EC2 instance in your VPC private subnets:
 
-# From RIOT instance (using private endpoint)
-ssh -i your-key.pem ubuntu@RIOT_IP
+```bash
+# Using private endpoint (recommended for VPC-internal connections)
 redis-cli -h REDIS_CLOUD_PRIVATE_IP -p PORT -a PASSWORD
+
+# Using public endpoint (for external connections)
+redis-cli -h REDIS_CLOUD_PUBLIC_IP -p PORT -a PASSWORD
 ```
 
-## RIOT-X Migration Examples
-
-### Live Replication (Continuous Sync)
-
+Get connection details:
 ```bash
-# SSH to RIOT instance
-ssh -i your-key.pem ubuntu@RIOT_IP
+# Get all connection information
+terraform output redis_cloud_connection_info
 
-# Start live replication from local Redis OSS to Redis Cloud
-riotx replicate \
-  --source redis://localhost:6379 \
-  --target redis://:PASSWORD@REDIS_CLOUD_PRIVATE_IP:PORT \
-  --live
+# Get ready-to-use CLI command
+terraform output -raw redis_cloud_cli_command
 ```
 
-### One-time Migration
+### Network Configuration
 
-```bash
-# Migrate all data from source to Redis Cloud
-riotx replicate \
-  --source redis://SOURCE_HOST:6379 \
-  --target redis://:PASSWORD@REDIS_CLOUD_PRIVATE_IP:PORT
-```
+- **AWS VPC**: 10.0.0.0/16
+  - Public subnets: 10.0.1.0/24, 10.0.2.0/24
+  - Private subnets: 10.0.3.0/24, 10.0.4.0/24
+- **Redis Cloud**: 10.42.0.0/24
+- **VPC Peering**: Automatic setup with route configuration
 
-### Data Generation for Testing
+## Redis Cloud Features
 
-```bash
-# Generate test data in local Redis OSS
-riotx generate \
-  --target redis://localhost:6379 \
-  --count 10000 \
-  --keyspace person \
-  --fields firstname,lastname,email
-```
+This deployment includes:
 
-## Monitoring
-
-### Accessing Observability Tools
-
-If observability is enabled on the RIOT instance:
-
-```bash
-# Get RIOT instance IP
-RIOT_IP=$(terraform output -raw riot_ec2_public_ip)
-
-# Access Grafana (if enabled)
-echo "Grafana: http://$RIOT_IP:3000"
-echo "Default credentials: admin/admin"
-
-# Access Prometheus (if enabled)
-echo "Prometheus: http://$RIOT_IP:9090"
-```
-
-### Redis Cloud Monitoring
-
-- **Redis Cloud Console**: https://app.redislabs.com
-- Built-in metrics and alerting
-- Performance monitoring and insights
-
-## Common Migration Workflows
-
-### 1. ElastiCache to Redis Cloud Migration
-
-```bash
-# From RIOT instance
-riotx replicate \
-  --source redis://ELASTICACHE_ENDPOINT:6379 \
-  --target redis://:PASSWORD@REDIS_CLOUD_PRIVATE_IP:PORT \
-  --live \
-  --key-filter "*"
-```
-
-### 2. On-premises Redis to Redis Cloud
-
-```bash
-# One-time migration
-riotx replicate \
-  --source redis://ONPREM_HOST:6379 \
-  --target redis://:PASSWORD@REDIS_CLOUD_PRIVATE_IP:PORT \
-  --batch-size 1000
-
-# With live replication
-riotx replicate \
-  --source redis://ONPREM_HOST:6379 \
-  --target redis://:PASSWORD@REDIS_CLOUD_PRIVATE_IP:PORT \
-  --live \
-  --batch-size 1000
-```
-
-### 3. Data Validation
-
-```bash
-# Compare source and target
-riotx compare \
-  --source redis://SOURCE_HOST:6379 \
-  --target redis://:PASSWORD@REDIS_CLOUD_PRIVATE_IP:PORT
-```
+- **Redis Enterprise**: Fully managed Redis with enterprise features
+- **RedisJSON Module**: Built-in JSON document support
+- **High Availability**: Multi-AZ deployment with replication
+- **Persistence**: AOF (Append-Only File) every 1 second
+- **Monitoring**: Built-in metrics and alerting via Redis Cloud console
 
 ## Outputs
 
 Key outputs for connection and management:
 
-- `ssh_command`: Ready-to-use SSH command for RIOT instance
-- `redis_cloud_cli_command`: Redis CLI command for Redis Cloud
-- `riot_commands`: Common RIOT-X commands for your environment
+- `vpc_id`: AWS VPC identifier
+- `redis_cloud_connection_info`: Complete connection details (sensitive)
+- `redis_cloud_cli_command`: Ready-to-use Redis CLI command (sensitive)
 - `database_private_endpoint`: Private endpoint for VPC-internal connections
 - `database_public_endpoint`: Public endpoint for external connections
+- `rediscloud_subscription_id`: Redis Cloud subscription ID
 
 ## Cost Optimization
 
-### AWS Resources
-- Use `t3.large` for lighter workloads instead of `t3.xlarge`
-- Stop RIOT instance when not actively migrating
-- Consider reserved instances for long-term projects
-
 ### Redis Cloud
-- Start with smaller database sizes and scale up
-- Use appropriate throughput settings
-- Monitor usage and adjust as needed
+- Start with smaller database sizes (1GB) and scale up as needed
+- Use appropriate throughput settings (1000 ops/sec by default)
+- Monitor usage in Redis Cloud console
+
+### AWS Resources
+- VPC and networking components have minimal cost
+- No EC2 instances to manage = no compute costs
+- Only pay for data transfer across VPC peering
 
 ## Security Best Practices
 
-1. **Network Security**: All Redis traffic uses private endpoints
-2. **Access Control**: Limit SSH access with specific IP CIDRs
-3. **Encryption**: Redis Cloud uses encryption in transit and at rest
-4. **Key Management**: Store SSH keys and Redis passwords securely
+1. **Private Connectivity**: Redis traffic uses private VPC peering
+2. **Network Isolation**: Redis Cloud in dedicated network (10.42.0.0/24)
+3. **Encryption**: Redis Cloud provides encryption in transit and at rest
+4. **Access Control**: Deploy applications in private subnets for security
+
+## Use Cases
+
+This configuration is ideal for:
+
+- **Production Applications**: Secure Redis connectivity from your AWS applications
+- **Microservices**: Shared Redis instance across multiple services in VPC
+- **Development/Staging**: Cost-effective Redis Cloud testing environment
+- **Migration Preparation**: Set up target Redis Cloud before data migration
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **VPC Peering failed**: Check AWS account ID and permissions
-2. **Can't connect to Redis Cloud**: Verify VPC peering and security groups
-3. **RIOT commands fail**: Check Redis Cloud password and endpoints
-4. **SSH connection refused**: Verify key pair and security group rules
+1. **VPC Peering failed**: Check AWS account ID matches your actual account
+2. **Can't connect to Redis Cloud**: Verify VPC peering status and routes
+3. **Connection timeout**: Ensure your application is in private subnet
 
 ### Useful Commands
 
@@ -252,12 +175,23 @@ Key outputs for connection and management:
 # Check VPC peering status
 aws ec2 describe-vpc-peering-connections
 
-# Test Redis Cloud connectivity from RIOT instance
-ssh -i your-key.pem ubuntu@RIOT_IP 'redis-cli -h REDIS_IP -p PORT -a PASSWORD ping'
+# Test connectivity from EC2 instance in private subnet
+redis-cli -h REDIS_PRIVATE_IP -p PORT -a PASSWORD ping
 
-# Check RIOT instance logs
-ssh -i your-key.pem ubuntu@RIOT_IP 'sudo tail -f /var/log/user-data.log'
+# Check route tables
+aws ec2 describe-route-tables --filters "Name=vpc-id,Values=VPC_ID"
 ```
+
+## Monitoring
+
+### Redis Cloud Console
+- **URL**: https://app.redislabs.com
+- **Features**: Built-in metrics, performance monitoring, alerting
+- **Metrics**: Memory usage, operations/sec, latency, connections
+
+### CloudWatch (AWS)
+- VPC Flow Logs for network monitoring
+- VPC peering connection status
 
 ## Cleanup
 
@@ -267,35 +201,19 @@ To remove all resources:
 terraform destroy
 ```
 
-**Note**: This will delete all AWS resources and the Redis Cloud subscription. Make sure to backup any important data first.
+**Note**: This will delete all AWS resources and the Redis Cloud subscription. The Redis Cloud subscription deletion may take a few minutes to complete.
 
-## Advanced Usage
+## Next Steps
 
-### Custom RIOT Scripts
+After deployment, you can:
 
-You can create custom migration scripts on the RIOT instance:
-
-```bash
-# SSH to RIOT instance
-ssh -i your-key.pem ubuntu@RIOT_IP
-
-# Create custom migration script
-cat > migrate.sh << 'EOF'
-#!/bin/bash
-riotx replicate \
-  --source redis://SOURCE:6379 \
-  --target redis://:PASSWORD@TARGET:PORT \
-  --live \
-  --progress \
-  --batch-size 1000
-EOF
-
-chmod +x migrate.sh
-./migrate.sh
-```
+1. **Deploy Applications**: Launch EC2 instances in private subnets
+2. **Add More Databases**: Create additional databases in the same subscription
+3. **Configure Monitoring**: Set up alerts in Redis Cloud console
+4. **Scale Resources**: Increase database size and throughput as needed
 
 ## Support
 
-- RIOT-X Documentation: https://github.com/redis-field-engineering/riot
 - Redis Cloud Documentation: https://docs.redis.com/
 - AWS VPC Documentation: https://docs.aws.amazon.com/vpc/
+- Terraform Redis Cloud Provider: https://registry.terraform.io/providers/RedisLabs/rediscloud/
