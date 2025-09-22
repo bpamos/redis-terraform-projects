@@ -1,0 +1,117 @@
+# =============================================================================
+# REDIS CLOUD VPC PROJECT CONFIGURATION
+# Production-ready Redis Cloud deployment with AWS VPC and secure peering
+# =============================================================================
+
+# Project identification - UPDATE THESE VALUES
+name_prefix = "your-company-redis"    # Unique prefix (lowercase, alphanumeric + hyphens)
+owner       = "your-team"             # Your team or name
+project     = "redis-production"      # Project name
+
+# AWS configuration - UPDATE THESE VALUES
+aws_region     = "us-west-2"          # Your AWS region
+aws_account_id = "123456789012"       # Your 12-digit AWS Account ID
+
+# Redis Cloud API credentials - UPDATE THESE VALUES
+# To get your API keys:
+# 1. Sign in to Redis Cloud console (https://app.redislabs.com)
+# 2. Go to "Access Management" > "API Keys" tab
+# 3. Account Key: Click "Show" then "Copy" (this is your API key)
+# 4. User Key: Click "Add", provide name, select user role, click "Create" 
+#    Copy the user key immediately - it's only shown once (this is your secret key)
+rediscloud_api_key    = "your-account-api-key"    # Account key from API Keys tab
+rediscloud_secret_key = "your-user-secret-key"    # User key (copy when created)
+
+# Payment configuration - UPDATE THESE VALUES
+# OPTION 1: Credit Card Billing (default)
+credit_card_type      = "Visa"        # Your payment method type
+credit_card_last_four = "1234"        # Last 4 digits
+
+# OPTION 2: Marketplace Billing 
+# If using AWS Marketplace billing, comment out the credit card lines above
+# and add this line to your terraform.tfvars:
+# payment_method = "marketplace"
+
+# =============================================================================
+# NETWORKING CONFIGURATION
+# =============================================================================
+
+# OPTION 1: CREATE NEW VPC (default - uncomment these lines)
+# Comment out these lines if you want to use an existing VPC (see Option 2 below)
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
+availability_zones   = ["us-west-2a", "us-west-2b"]
+
+# OPTION 2: USE EXISTING VPC 
+# To use an existing VPC instead of creating a new one:
+# 1. Comment out the VPC configuration above (Option 1)
+# 2. Modify main.tf to use data sources instead of the vpc module:
+#    - Replace module.vpc.vpc_id with your VPC ID
+#    - Replace module.vpc.private_route_table_ids[0] with your route table ID
+# 3. Update the rediscloud_peering module call with your existing VPC details
+#
+# Example data sources to add to main.tf:
+# data "aws_vpc" "existing" {
+#   id = "vpc-1234567890abcdef0"  # Your existing VPC ID
+# }
+# data "aws_route_table" "existing" {
+#   id = "rtb-1234567890abcdef0"  # Your existing route table ID
+# }
+
+# Redis Cloud networking
+rediscloud_region          = "us-west-2"
+networking_deployment_cidr = "10.42.0.0/24"
+preferred_azs              = []  # Leave empty for auto-selection
+
+# =============================================================================
+# SUBSCRIPTION CONFIGURATION
+# =============================================================================
+
+# Subscription settings
+subscription_name = "production-redis-subscription"
+memory_storage    = "ram"              # "ram" or "ram-and-flash"
+redis_version     = "7.2"
+cloud_provider    = "AWS"
+cloud_account_id  = 1                  # Redis Labs cloud account (default)
+multi_az          = true
+
+# Creation plan (subscription capacity planning)
+initial_dataset_size_in_gb = 1         # Initial capacity planning
+initial_database_quantity  = 1         # Number of databases to plan for
+initial_replication        = true      # Enable replication in plan
+initial_throughput_by      = "operations-per-second"
+initial_throughput_value   = 2000      # Combined initial throughput
+initial_modules            = []        # Add modules per database
+
+# Maintenance window
+maintenance_start_hour = 22            # 22:00 UTC (adjust for your timezone)
+maintenance_duration   = 8             # Duration in hours
+maintenance_days       = ["Sunday"]    # Days for maintenance
+
+# =============================================================================
+# DATABASE CONFIGURATION
+# =============================================================================
+
+# Primary database settings
+database_name      = "production-db"
+dataset_size_in_gb = 1                 # Expected dataset size
+data_persistence   = "aof-every-1-second"  # Persistence mode
+throughput_by      = "operations-per-second"
+throughput_value   = 1000              # Expected operations per second
+replication        = true              # Enable high availability
+modules_enabled    = ["RedisJSON", "RediSearch"]     # Redis modules to enable
+
+# Monitoring
+enable_alerts                = true    # Enable monitoring alerts
+dataset_size_alert_threshold = 80      # Alert at 80% capacity
+
+# =============================================================================
+# RESOURCE TAGGING
+# =============================================================================
+
+tags = {
+  environment = "production"
+  purpose     = "redis-cloud-production"
+  team        = "platform"
+}
