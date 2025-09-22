@@ -61,6 +61,7 @@ module "redis_subscription" {
   preferred_azs              = var.preferred_azs
 
   # Payment configuration
+  payment_method        = var.payment_method
   credit_card_type      = var.credit_card_type
   credit_card_last_four = var.credit_card_last_four
 

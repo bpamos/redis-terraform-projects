@@ -130,8 +130,19 @@ variable "rediscloud_secret_key" {
   sensitive   = true
 }
 
+variable "payment_method" {
+  description = "Payment method for Redis Cloud subscription"
+  type        = string
+  default     = "credit-card"
+
+  validation {
+    condition     = contains(["credit-card", "marketplace"], var.payment_method)
+    error_message = "Payment method must be either 'credit-card' or 'marketplace'."
+  }
+}
+
 variable "credit_card_type" {
-  description = "Credit card type for Redis Cloud payment"
+  description = "Credit card type for Redis Cloud payment (only required for credit-card payment method)"
   type        = string
   default     = "Visa"
 
@@ -142,12 +153,13 @@ variable "credit_card_type" {
 }
 
 variable "credit_card_last_four" {
-  description = "Last four digits of the credit card for Redis Cloud subscription"
+  description = "Last four digits of the credit card for Redis Cloud subscription (only required for credit-card payment method)"
   type        = string
+  default     = ""
 
   validation {
-    condition     = can(regex("^[0-9]{4}$", var.credit_card_last_four))
-    error_message = "Credit card last four must be exactly 4 digits."
+    condition     = var.credit_card_last_four == "" || can(regex("^[0-9]{4}$", var.credit_card_last_four))
+    error_message = "Credit card last four must be empty or exactly 4 digits."
   }
 }
 

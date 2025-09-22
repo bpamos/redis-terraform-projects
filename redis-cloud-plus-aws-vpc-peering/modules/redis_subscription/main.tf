@@ -3,8 +3,9 @@
 # Creates a Redis Cloud subscription with VPC networking
 # =============================================================================
 
-# Get payment method for subscription billing
+# Get payment method for subscription billing (only for credit card)
 data "rediscloud_payment_method" "card" {
+  count             = var.payment_method == "credit-card" ? 1 : 0
   card_type         = var.credit_card_type
   last_four_numbers = var.credit_card_last_four
 }
@@ -12,8 +13,8 @@ data "rediscloud_payment_method" "card" {
 # Create Redis Cloud subscription with VPC networking
 resource "rediscloud_subscription" "redis" {
   name              = var.subscription_name
-  payment_method    = "credit-card"
-  payment_method_id = data.rediscloud_payment_method.card.id
+  payment_method    = var.payment_method
+  payment_method_id = var.payment_method == "credit-card" ? data.rediscloud_payment_method.card[0].id : null
   memory_storage    = var.memory_storage
   redis_version     = var.redis_version
 

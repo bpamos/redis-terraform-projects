@@ -24,13 +24,15 @@ rediscloud_secret_key = "your-user-secret-key"    # User key (copy when created)
 
 # Payment configuration - UPDATE THESE VALUES
 # OPTION 1: Credit Card Billing (default)
+payment_method        = "credit-card" # Use "credit-card" for direct billing
 credit_card_type      = "Visa"        # Your payment method type
 credit_card_last_four = "1234"        # Last 4 digits
 
 # OPTION 2: Marketplace Billing 
-# If using AWS Marketplace billing, comment out the credit card lines above
-# and add this line to your terraform.tfvars:
+# If using AWS Marketplace billing, use these settings instead:
 # payment_method = "marketplace"
+# credit_card_type      = ""    # Not required for marketplace
+# credit_card_last_four = ""    # Not required for marketplace
 
 # =============================================================================
 # NETWORKING CONFIGURATION
