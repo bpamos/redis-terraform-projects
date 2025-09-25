@@ -298,11 +298,18 @@ terraform destroy
 
 This project uses a modular Terraform architecture for production flexibility:
 
+### **Main Configuration Files:**
+- **`main.tf`**: Entry point with documentation and overview
+- **`main_redis_cloud.tf`**: Redis Cloud subscription, database, and peering resources
+- **`main_aws_resources.tf`**: AWS VPC, EC2, security groups, and observability stack
+
 ### **Modules Included:**
 - **`modules/redis_subscription/`**: Manages Redis Cloud subscription, payment, and networking
 - **`modules/redis_database/`**: Creates individual databases within a subscription  
 - **`modules/vpc/`**: AWS VPC infrastructure with public/private subnets
 - **`modules/rediscloud_peering/`**: VPC peering between AWS and Redis Cloud
+- **`modules/observability/`**: Prometheus/Grafana monitoring stack
+- **`modules/ec2_test/`**: Testing EC2 instance with Redis tools
 
 ### **Easy Scaling:**
 ```hcl
