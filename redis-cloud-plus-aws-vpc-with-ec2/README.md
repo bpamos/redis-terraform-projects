@@ -16,8 +16,10 @@ This project creates a Redis Cloud deployment with AWS VPC infrastructure and se
 ## What This Creates
 
 - **AWS VPC**: Complete networking infrastructure with public/private subnets
-- **Redis Cloud**: Managed Redis Enterprise subscription and database  
+- **Redis Cloud**: Managed Redis Enterprise subscription and database with RedisJSON & RediSearch modules
 - **VPC Peering**: Secure private connection between AWS VPC and Redis Cloud
+- **EC2 Testing Instance**: Ubuntu instance with Redis CLI, memtier-benchmark for testing (optional)
+- **Observability Stack**: Prometheus & Grafana with Redis Cloud dashboards for monitoring (optional)
 
 ## Prerequisites
 
@@ -54,6 +56,13 @@ This project creates a Redis Cloud deployment with AWS VPC infrastructure and se
    terraform output -raw redis_cloud_cli_command
    ```
 
+5. **Access monitoring (if enabled)**:
+   ```bash
+   terraform output grafana_url          # Grafana dashboard
+   terraform output prometheus_url       # Prometheus metrics
+   terraform output dashboard_urls       # Direct Redis dashboard links
+   ```
+
 ## Configuration
 
 ### Required Variables
@@ -74,25 +83,48 @@ This project creates a Redis Cloud deployment with AWS VPC infrastructure and se
 - `modules_enabled`: Redis modules (default: ["RedisJSON", "RediSearch"])
 - `vpc_cidr`: VPC CIDR block (default: 10.0.0.0/16)
 
+### Testing & Monitoring Variables
+
+- `enable_ec2_testing`: Deploy EC2 instance with Redis tools (default: true)
+- `enable_observability`: Deploy Prometheus/Grafana monitoring stack (default: true)  
+- `ec2_instance_type`: EC2 instance size (default: t3.medium)
+- `ec2_key_name`: SSH key pair name for EC2 access
+- `ec2_ssh_private_key_path`: Path to private key file for provisioning
+
 ## Architecture
 
 ```
-┌─────────────────┐    ┌──────────────────┐
-│   AWS VPC       │    │   Redis Cloud    │
-│   10.0.0.0/16   │    │   10.42.0.0/24   │
-│                 │    │                  │
-│ ┌─────────────┐ │    │ ┌──────────────┐ │
-│ │ Private     │ │◄──►│ │ Redis        │ │
-│ │ Subnets     │ │    │ │ Database     │ │
-│ │             │ │    │ │              │ │
-│ └─────────────┘ │    │ └──────────────┘ │
-│ ┌─────────────┐ │    │                  │
-│ │ Public      │ │    │                  │
-│ │ Subnets     │ │    │                  │
-│ └─────────────┘ │    │                  │
-└─────────────────┘    └──────────────────┘
-        │                       │
-        └───── VPC Peering ─────┘
+┌─────────────────────────────────┐    ┌──────────────────┐
+│           AWS VPC               │    │   Redis Cloud    │
+│         10.0.0.0/16             │    │   10.42.0.0/24   │
+│                                 │    │                  │
+│ ┌─────────────────────────────┐ │    │ ┌──────────────┐ │
+│ │        Private Subnets      │ │◄──►│ │ Redis        │ │
+│ │      10.0.3.0/24 &         │ │    │ │ Database     │ │
+│ │      10.0.4.0/24           │ │    │ │ (3GB)        │ │
+│ └─────────────────────────────┘ │    │ │ RedisJSON    │ │
+│ ┌─────────────────────────────┐ │    │ │ RediSearch   │ │
+│ │        Public Subnets       │ │    │ └──────────────┘ │
+│ │      10.0.1.0/24 &         │ │    │                  │
+│ │      10.0.2.0/24           │ │    │                  │
+│ │                             │ │    │                  │
+│ │  ┌─────────────────────┐   │ │    │                  │
+│ │  │   EC2 Test Instance │   │ │    │                  │
+│ │  │   (Ubuntu t3.medium)│   │ │    │                  │
+│ │  │                     │   │ │    │                  │
+│ │  │ • Redis CLI         │   │ │    │                  │
+│ │  │ • memtier-benchmark │   │ │    │                  │
+│ │  │ • Prometheus:9090   │   │ │    │                  │
+│ │  │ • Grafana:3000      │   │ │    │                  │
+│ │  └─────────────────────┘   │ │    │                  │
+│ └─────────────────────────────┘ │    │                  │
+└─────────────────────────────────┘    └──────────────────┘
+            │                                   │
+            └─────────── VPC Peering ───────────┘
+                     
+Monitoring Flow:
+EC2 Prometheus ──HTTPS──► Redis Cloud Metrics (port 8070)
+                          └──► Grafana Dashboards
 ```
 
 ## Usage
@@ -146,12 +178,19 @@ This deployment includes:
 
 Key outputs for connection and management:
 
+### Redis Connection Outputs
 - `vpc_id`: AWS VPC identifier
 - `redis_cloud_connection_info`: Complete connection details (sensitive)
 - `redis_cloud_cli_command`: Ready-to-use Redis CLI command (sensitive)
 - `database_private_endpoint`: Private endpoint for VPC-internal connections
 - `database_public_endpoint`: Public endpoint for external connections
 - `rediscloud_subscription_id`: Redis Cloud subscription ID
+
+### Monitoring Outputs (when observability enabled)
+- `prometheus_url`: Prometheus dashboard URL 
+- `grafana_url`: Grafana dashboard URL
+- `dashboard_urls`: Direct links to Redis Cloud dashboards
+- `monitoring_info`: Complete monitoring setup details (sensitive)
 
 ## Cost Optimization
 
@@ -218,9 +257,29 @@ aws ec2 describe-route-tables --filters "Name=vpc-id,Values=VPC_ID"
 - **Features**: Built-in metrics, performance monitoring, alerting
 - **Metrics**: Memory usage, operations/sec, latency, connections
 
+### Observability Stack (Optional)
+When `enable_observability = true` is set, the deployment includes:
+
+- **Prometheus**: Scrapes Redis Cloud native metrics endpoint (port 8070)
+  - Access: `http://<ec2-public-ip>:9090`
+  - Targets: Redis Cloud private endpoint with TLS verification disabled
+  
+- **Grafana**: Pre-configured with Redis Cloud dashboards
+  - Access: `http://<ec2-public-ip>:3000` (admin/admin)
+  - **Dashboards Available:**
+    - Database Status Dashboard - Redis database performance metrics
+    - Subscription Status Dashboard - Redis subscription and cluster metrics  
+    - Proxy Threads Dashboard - Redis proxy performance and connections
+
+- **Dashboard URLs**: Available via terraform output `dashboard_urls`
+
 ### CloudWatch (AWS)
 - VPC Flow Logs for network monitoring
 - VPC peering connection status
+
+### Testing Tools
+- **memtier-benchmark**: Load testing tool for Redis performance validation
+- **Redis CLI**: Direct database connection and testing
 
 ## Cleanup
 
