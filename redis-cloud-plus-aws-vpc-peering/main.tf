@@ -119,7 +119,7 @@ module "rediscloud_peering" {
   region          = var.rediscloud_region
   vpc_id          = module.vpc.vpc_id
   vpc_cidr        = var.vpc_cidr
-  route_table_id  = module.vpc.private_route_table_ids[0]
+  route_table_id  = module.vpc.public_route_table_id
   peer_cidr_block = var.peer_cidr_block
 
   depends_on = [
