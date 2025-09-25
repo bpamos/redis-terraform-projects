@@ -93,6 +93,8 @@ This project creates a Redis Cloud deployment with AWS VPC infrastructure and se
 
 ## Architecture
 
+**Default Example Configuration** (fully customizable via terraform.tfvars):
+
 ```
 ┌─────────────────────────────────┐    ┌──────────────────┐
 │           AWS VPC               │    │   Redis Cloud    │
@@ -101,7 +103,7 @@ This project creates a Redis Cloud deployment with AWS VPC infrastructure and se
 │ ┌─────────────────────────────┐ │    │ ┌──────────────┐ │
 │ │        Private Subnets      │ │◄──►│ │ Redis        │ │
 │ │      10.0.3.0/24 &         │ │    │ │ Database     │ │
-│ │      10.0.4.0/24           │ │    │ │ (3GB)        │ │
+│ │      10.0.4.0/24           │ │    │ │              │ │
 │ └─────────────────────────────┘ │    │ │ RedisJSON    │ │
 │ ┌─────────────────────────────┐ │    │ │ RediSearch   │ │
 │ │        Public Subnets       │ │    │ └──────────────┘ │
@@ -265,7 +267,8 @@ When `enable_observability = true` is set, the deployment includes:
   - Targets: Redis Cloud private endpoint with TLS verification disabled
   
 - **Grafana**: Pre-configured with Redis Cloud dashboards
-  - Access: `http://<ec2-public-ip>:3000` (admin/admin)
+  - Access: `http://<ec2-public-ip>:3000`
+  - **Login**: Username: `admin`, Password: `admin`
   - **Dashboards Available:**
     - Database Status Dashboard - Redis database performance metrics
     - Subscription Status Dashboard - Redis subscription and cluster metrics  
