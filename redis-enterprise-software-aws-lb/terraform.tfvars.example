@@ -1,0 +1,130 @@
+#==============================================================================
+# REDIS ENTERPRISE SOFTWARE AWS - REQUIRED CONFIGURATION
+# Copy this file to terraform.tfvars and update these values before deployment
+#==============================================================================
+
+#==============================================================================
+# ⚠️  REQUIRED VALUES - MUST BE CHANGED BEFORE DEPLOYMENT
+#==============================================================================
+
+# Project identification (REQUIRED)
+name_prefix = "your-unique-prefix"    # CHANGE: Your unique prefix (lowercase, alphanumeric + hyphens)
+owner       = "your-name-or-team"     # CHANGE: Your name/team
+
+# AWS Configuration (REQUIRED)
+aws_region            = "us-west-2"                      # CHANGE: Your preferred AWS region
+key_name              = "your-ec2-key-name"              # CHANGE: Your EC2 key pair name
+ssh_private_key_path  = "path/to/your/private-key.pem"   # CHANGE: Path to your SSH private key
+
+# Load Balancer Configuration (REQUIRED)
+load_balancer_type = "nlb"                               # CHANGE: Choose "nlb" (AWS managed) or "haproxy" (self-managed)
+
+# Redis Enterprise Software (REQUIRED)
+# Visit: https://redis.io/docs/latest/operate/rs/installing-upgrading/install/plan-deployment/supported-platforms/
+# Find the latest download URL for your platform and paste it below
+re_download_url = "REPLACE_WITH_YOUR_REDIS_ENTERPRISE_DOWNLOAD_URL"
+
+# Cluster Credentials (REQUIRED - Use Secure Passwords!)
+cluster_username = "admin@your-domain.com"    # CHANGE: Your admin email
+cluster_password = "YourSecurePassword123!"   # CHANGE: Strong password (min 8 chars)
+
+# Security (RECOMMENDED)
+# For testing only: use ["0.0.0.0/0"] for open access
+allow_ssh_from = ["YOUR.PUBLIC.IP.ADDRESS/32"]  # CHANGE: Your public IP for SSH access
+
+#==============================================================================
+# CLUSTER CONFIGURATION (Optional - Good defaults provided)
+#==============================================================================
+
+# Basic Settings
+project = "redis-enterprise-software-aws"
+
+# Cluster Size and Performance
+node_count     = 3               # Number of Redis nodes (minimum 3)
+instance_type  = "t3.xlarge"     # EC2 instance type (16GB RAM - good for testing)
+node_root_size = 50              # Root disk size in GB
+
+# Platform Selection
+platform = "ubuntu"              # Choose: "ubuntu" or "rhel"
+
+# High Availability
+rack_awareness = true             # Enable rack/zone awareness for HA
+flash_enabled  = false           # Enable Redis on Flash (RoF) - optional
+
+#==============================================================================
+# NETWORK CONFIGURATION (Optional - Good defaults provided)
+#==============================================================================
+
+# VPC and Subnets (will be created for you)
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+private_subnet_cidrs = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
+
+# Load Balancer Settings (configured automatically based on load_balancer_type above)
+
+#==============================================================================
+# STORAGE CONFIGURATION (Optional - Good defaults provided)
+#==============================================================================
+
+# EBS Storage (based on RAM requirements)
+data_volume_size       = 64      # Data volume size in GB (RAM x 4)
+data_volume_type       = "gp3"   # EBS volume type for data storage
+persistent_volume_size = 64      # Persistent volume size in GB (RAM x 4)
+persistent_volume_type = "gp3"   # EBS volume type for persistent storage
+ebs_encryption_enabled = true    # Enable EBS encryption
+
+#==============================================================================
+# SAMPLE DATABASE CONFIGURATION (Optional - Good defaults provided)
+#==============================================================================
+
+# Automatic Database Creation
+create_sample_database = true    # Create a demo database for testing
+sample_db_name        = "demo"   # Database name
+sample_db_port        = 12000    # Database port (10000-19999)
+sample_db_memory      = 100      # Memory size in MB
+
+#==============================================================================
+# RESOURCE TAGGING (Optional - Customize as needed)
+#==============================================================================
+
+tags = {
+  environment = "demo"
+  purpose     = "redis-enterprise-testing"
+}
+
+#==============================================================================
+# 🔗 HELPFUL INFORMATION
+#==============================================================================
+# 
+# After deployment, your cluster will be accessible at:
+# • UI Access:  https://name-prefix.your-domain.com:8443
+# • API Access: https://name-prefix.your-domain.com:9443
+# 
+# Database endpoints will be created as:
+# • External: redis-12000.name-prefix.your-domain.com:12000
+# • Internal: redis-12000-internal.name-prefix.your-domain.com:12000
+#
+# Example with name_prefix="my-redis" and domain="example.com":
+# • UI:       https://my-redis.example.com:8443
+# • Database: redis-12000.my-redis.example.com:12000 (public)
+# • Database: redis-12000-internal.my-redis.example.com:12000 (private/VPC)
+#
+#==============================================================================
+# 🔒 SECURITY REMINDERS
+#==============================================================================
+# 
+# ✅ DO:
+# • Use strong, unique passwords
+# • Store SSH keys securely 
+# • Restrict SSH access to your IP
+# • Keep hosted zone ID confidential
+# • Never commit terraform.tfvars to git
+# 
+# ⚠️  PRODUCTION:
+# • Use AWS Systems Manager for secrets
+# • Enable additional monitoring
+# • Configure backup strategies
+# • Review security group rules
+# • Consider private subnets for nodes
+#
+#==============================================================================

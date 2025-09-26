@@ -1,0 +1,65 @@
+#!/bin/bash
+# =============================================================================
+# BASIC SYSTEM SETUP (User Data) - RHEL/CentOS
+# =============================================================================
+# Minimal setup that fits within user_data limits
+# =============================================================================
+
+set -e
+
+exec > >(tee /var/log/basic-setup.log)
+exec 2>&1
+
+echo "Starting basic system setup (RHEL) - $(date)"
+
+# Set hostname
+echo "Setting hostname to ${hostname}..."
+hostnamectl set-hostname "${hostname}"
+echo "127.0.0.1 ${hostname}" >> /etc/hosts
+
+# Install essential packages
+echo "Installing prerequisites..."
+dnf update -y
+dnf install -y wget curl jq net-tools bind-utils xfsprogs
+
+# Configure DNS (RHEL/CentOS)
+echo "Configuring DNS for Redis Enterprise..."
+# Backup original resolv.conf
+cp /etc/resolv.conf /etc/resolv.conf.backup
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+
+# Wait for EBS volumes to be attached
+echo "Waiting for EBS volumes..."
+while [ ! -e /dev/nvme1n1 ] || [ ! -e /dev/nvme2n1 ]; do
+    echo "Waiting for EBS volumes..."
+    sleep 5
+done
+
+# Format volumes if needed
+echo "Setting up EBS volumes..."
+if ! blkid /dev/nvme1n1; then 
+    mkfs.xfs /dev/nvme1n1
+fi
+if ! blkid /dev/nvme2n1; then 
+    mkfs.xfs /dev/nvme2n1
+fi
+
+# Mount volumes
+mkdir -p /var/opt/redislabs
+mount /dev/nvme1n1 /var/opt/redislabs
+mkdir -p /var/opt/redislabs/persist
+mount /dev/nvme2n1 /var/opt/redislabs/persist
+
+# Add to fstab
+echo "/dev/nvme1n1 /var/opt/redislabs xfs defaults,nofail 0 2" >> /etc/fstab
+echo "/dev/nvme2n1 /var/opt/redislabs/persist xfs defaults,nofail 0 2" >> /etc/fstab
+
+# Set proper ownership
+chown -R root:root /var/opt/redislabs
+chmod 755 /var/opt/redislabs /var/opt/redislabs/persist
+
+# Create marker for completion
+touch /tmp/basic-setup-complete
+
+echo "Basic setup completed (RHEL) - $(date)"
