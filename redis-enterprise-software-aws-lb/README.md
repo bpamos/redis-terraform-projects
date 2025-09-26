@@ -1,31 +1,25 @@
-# Redis Enterprise Software on AWS - Terraform Deployment
+# Redis Enterprise Software on AWS - Load Balancer Deployment
 
-This Terraform project deploys a highly available Redis Enterprise Software cluster on AWS with automatic DNS configuration, platform selection (Ubuntu/RHEL), and production-ready security settings.
+This Terraform project deploys a highly available Redis Enterprise Software cluster on AWS with multiple load balancer options: AWS Network Load Balancer (NLB), NGINX, and HAProxy.
 
 ## 🚀 Features
 
+- **Multiple Load Balancer Options**: Choose between NLB (managed), NGINX (self-managed), or HAProxy (self-managed)
 - **Multi-Platform Support**: Choose between Ubuntu 22.04 or RHEL 9
-- **High Availability**: 3-node cluster with rack awareness and replication
-- **DNS Integration**: Automatic Route53 DNS records with custom naming
+- **High Availability**: 3-node Redis Enterprise cluster with rack awareness
 - **Security**: Comprehensive security groups with minimal required access
 - **Storage**: Optimized EBS volumes with encryption
 - **Monitoring**: Built-in metrics and health checking
 - **Sample Database**: Auto-created Redis database for testing
 
-## 📋 Prerequisites
-
-1. **AWS Account** with appropriate permissions
-2. **Terraform** >= 1.0
-3. **AWS CLI** configured with credentials
-4. **Route53 Hosted Zone** for DNS records
-5. **EC2 Key Pair** for SSH access
-6. **Redis Enterprise Download URL** (see Configuration section)
-
 ## 🏗️ Architecture
+
+### Default Architecture with Load Balancer
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        AWS VPC                             │
+│                                                             │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
 │  │  Public Subnet  │  │  Public Subnet  │  │  Public Subnet  │ │
 │  │     (AZ-1)      │  │     (AZ-2)      │  │     (AZ-3)      │ │
@@ -38,20 +32,24 @@ This Terraform project deploys a highly available Redis Enterprise Software clus
 └─────────────────────────────────────────────────────────────┘
                               │
                     ┌─────────────────┐
-                    │   Route53 DNS   │
+                    │  Load Balancer  │
                     │                 │
-                    │ Cluster UI:     │
-                    │ prefix.domain   │
+                    │  NLB / NGINX /  │
+                    │     HAProxy     │
                     │                 │
-                    │ Nodes:          │
-                    │ node1.prefix... │
-                    │ node2.prefix... │
-                    │ node3.prefix... │
-                    │                 │
-                    │ Databases:      │
-                    │ *.prefix.domain │
+                    │ Database: 6379  │
+                    │ API: 9443       │
+                    │ UI: 443         │
                     └─────────────────┘
 ```
+
+## 📋 Prerequisites
+
+1. **AWS Account** with appropriate permissions
+2. **Terraform** >= 1.0
+3. **AWS CLI** configured with credentials
+4. **EC2 Key Pair** for SSH access
+5. **Redis Enterprise Download URL** (see Configuration section)
 
 ## 🛠️ Quick Start
 
@@ -59,7 +57,7 @@ This Terraform project deploys a highly available Redis Enterprise Software clus
 
 ```bash
 git clone <repository-url>
-cd redis-enterprise-software-aws
+cd redis-enterprise-software-aws-lb
 cp terraform.tfvars.example terraform.tfvars
 ```
 
@@ -74,7 +72,9 @@ owner                  = "your-name"               # Your name/team
 aws_region            = "us-west-2"               # Your AWS region
 key_name              = "your-ec2-key"            # Your EC2 key pair
 ssh_private_key_path  = "path/to/your/key.pem"    # Path to private key
-dns_hosted_zone_id    = "YOUR_ROUTE53_HOSTED_ZONE_ID"  # Your Route53 zone ID
+
+# Load Balancer Selection
+load_balancer_type = "nlb"    # Options: "nlb", "nginx", "haproxy"
 
 # Choose platform: "ubuntu" or "rhel"
 platform = "ubuntu"
@@ -98,13 +98,74 @@ terraform apply
 ### 4. Access Your Cluster
 
 After deployment, you'll see outputs with:
-- **Cluster UI**: `https://your-prefix.your-domain.com:8443`
+- **Database Connection**: `redis-cli -h <load-balancer-ip> -p 6379`
+- **Cluster UI**: `https://<load-balancer-ip>:443`
+- **API Endpoint**: `https://<load-balancer-ip>:9443`
 - **SSH Commands**: Connect to individual nodes
-- **Database Connection**: `redis-cli -h demo-12000.your-prefix.your-domain.com -p 12000`
 
-## ⚙️ Configuration Options
+## ⚙️ Load Balancer Options
 
-### Platform Selection
+### 1. AWS Network Load Balancer (NLB) - Recommended
+
+**Advantages:**
+- Fully managed by AWS
+- High performance and low latency
+- Automatic health checks
+- Scales automatically
+
+**Configuration:**
+```hcl
+load_balancer_type = "nlb"
+```
+
+**Use Cases:**
+- Production environments
+- High traffic applications
+- Minimal management overhead required
+
+### 2. NGINX Load Balancer
+
+**Advantages:**
+- Full control over configuration
+- Advanced load balancing methods
+- SSL termination
+- Custom health checks
+
+**Configuration:**
+```hcl
+load_balancer_type = "nginx"
+nginx_instance_count = 2              # High availability
+nginx_instance_type = "t3.medium"     # Instance size
+
+# Load balancing methods
+database_lb_method = "least_conn"     # least_conn, round_robin, ip_hash, hash
+api_lb_method = "round_robin"         
+ui_lb_method = "ip_hash"              # Sticky sessions for UI
+
+# Port configuration
+frontend_database_port = 6379         # Client-facing port
+backend_database_port = 12000         # Redis Enterprise port
+frontend_api_port = 9443
+backend_api_port = 9443
+frontend_ui_port = 443
+backend_ui_port = 8443
+
+# Health check configuration
+max_fails = 3                         # Failed attempts before marking unavailable
+fail_timeout = "30s"                  # Time server marked unavailable
+proxy_timeout = "1s"                  # Connection timeout
+```
+
+**Use Cases:**
+- Need custom load balancing logic
+- SSL/TLS termination requirements
+- Advanced traffic routing
+
+### 3. HAProxy Load Balancer (Currently Excluded)
+
+HAProxy configuration is available but not covered in this README as requested.
+
+## 🔧 Platform Selection
 
 Choose between Ubuntu 22.04 LTS or RHEL 9:
 
@@ -124,51 +185,21 @@ re_download_url = "REPLACE_WITH_RHEL_REDIS_ENTERPRISE_DOWNLOAD_URL"
 2. Choose your desired version and platform
 3. Copy the download URL to your `terraform.tfvars`
 
-### DNS Naming Convention
-
-With `name_prefix = "my-redis"` and domain `example.com`:
-
-- **Cluster UI**: `https://my-redis.example.com:8443`
-- **API**: `https://my-redis.example.com:9443`
-- **Nodes**: `node1.my-redis.example.com`, `node2.my-redis.example.com`, etc.
-- **Databases**: `demo-12000.my-redis.example.com` (wildcards supported)
-
-### Cluster Sizing
-
-```hcl
-# Development/Testing
-node_count    = 3
-instance_type = "t3.xlarge"    # 16GB RAM
-
-# Production
-node_count    = 3              # or 5, 7, 9 for larger clusters
-instance_type = "r6i.2xlarge"  # 64GB RAM
-```
-
-### Storage Configuration
-
-```hcl
-# EBS volumes are automatically sized based on instance RAM
-data_volume_size       = 64    # RAM × 4 for optimal performance
-persistent_volume_size = 64    # Same as data volume
-ebs_encryption_enabled = true  # Always recommended
-```
-
 ## 🔒 Security
 
 ### Default Security Configuration
 
 - **SSH Access**: Restricted to specified CIDR blocks
-- **Redis UI/API**: Same restriction as SSH
-- **Database Ports**: Open within VPC + specified external IPs
+- **Load Balancer Access**: Configurable access from specified IPs
 - **Internal Communication**: Cluster nodes only
 - **EBS Encryption**: Enabled by default
 
 ### Production Security Checklist
 
-1. **Restrict SSH access** to your IP only:
+1. **Restrict access** to your IP only:
    ```hcl
    allow_ssh_from = ["YOUR.IP.ADDRESS/32"]
+   allow_access_from = ["YOUR.IP.ADDRESS/32"]
    ```
 
 2. **Use strong passwords**:
@@ -180,68 +211,108 @@ ebs_encryption_enabled = true  # Always recommended
    - Add `terraform.tfvars` to `.gitignore`
    - Use AWS Parameter Store for production secrets
 
-4. **Enable additional security**:
-   ```hcl
-   rack_awareness = true  # Distribute replicas across AZs
-   ```
+## 📊 Testing & Monitoring
 
-## 📊 Monitoring & Management
-
-### Useful Commands
+### Database Connection Testing
 
 ```bash
-# Check cluster status
-ssh -i key.pem ubuntu@node1.prefix.domain.com 'sudo /opt/redislabs/bin/rladmin status'
-
-# View cluster information
-ssh -i key.pem ubuntu@node1.prefix.domain.com 'sudo /opt/redislabs/bin/rladmin info cluster'
-
-# List databases
-ssh -i key.pem ubuntu@node1.prefix.domain.com 'sudo /opt/redislabs/bin/rladmin status databases'
-
-# Monitor logs
-ssh -i key.pem ubuntu@node1.prefix.domain.com 'sudo tail -f /var/opt/redislabs/log/supervisor/*.log'
-```
-
-### Testing Database Connectivity
-
-```bash
-# External connection
-redis-cli -h demo-12000.your-prefix.your-domain.com -p 12000 ping
-
-# Direct IP connection (backup)
-redis-cli -h <node-ip> -p 12000 ping
+# Test database connection through load balancer
+redis-cli -h <load-balancer-ip> -p 6379 ping
 
 # Test basic operations
-redis-cli -h demo-12000.your-prefix.your-domain.com -p 12000
+redis-cli -h <load-balancer-ip> -p 6379
 > SET test "Hello Redis Enterprise"
 > GET test
+
+# Test from multiple clients to verify load balancing
+for i in {1..10}; do
+  redis-cli -h <load-balancer-ip> -p 6379 CLIENT LIST | grep addr
+done
+```
+
+### API Access
+
+```bash
+# Test API endpoint through load balancer
+curl -k -u admin:password https://<load-balancer-ip>:9443/v1/cluster
+
+# Test UI access
+open https://<load-balancer-ip>:443
+```
+
+### Load Balancer Health
+
+**For NLB:**
+```bash
+# Check target group health in AWS Console
+aws elbv2 describe-target-health --target-group-arn <target-group-arn>
+```
+
+**For NGINX:**
+```bash
+# Check NGINX status
+ssh -i key.pem ubuntu@<nginx-lb-ip> 'sudo systemctl status nginx'
+
+# Check NGINX logs
+ssh -i key.pem ubuntu@<nginx-lb-ip> 'sudo tail -f /var/log/nginx/error.log'
 ```
 
 ## 🚨 Troubleshooting
 
 ### Common Issues
 
-1. **DNS Resolution Failure**
+1. **Connection Timeouts**
    ```bash
-   # Check DNS records
-   dig demo-12000.your-prefix.your-domain.com
+   # Check security group rules
+   aws ec2 describe-security-groups --group-ids <sg-id>
    
-   # Verify Route53 zone ID
-   aws route53 list-hosted-zones
+   # Test connectivity
+   telnet <load-balancer-ip> 6379
    ```
 
-2. **Service Issues**
+2. **Load Balancer Health Check Failures**
    ```bash
-   # Check Redis Enterprise cluster status
-   ssh -i key.pem ubuntu@node-ip 'sudo /opt/redislabs/bin/rladmin status'
+   # For NLB: Check target group health
+   # For NGINX: Check backend server connectivity
+   ssh -i key.pem ubuntu@<nginx-ip> 'curl -v http://<redis-node-ip>:12000'
+   ```
+
+3. **SSL/TLS Issues**
+   ```bash
+   # Test SSL connectivity
+   openssl s_client -connect <load-balancer-ip>:443
    ```
 
 ### Log Locations
 
-- **Cluster logs**: `/var/opt/redislabs/log/supervisor/`
+- **Redis Enterprise**: `/var/opt/redislabs/log/supervisor/`
+- **NGINX**: `/var/log/nginx/`
 - **Installation logs**: `/tmp/redis_enterprise_install.log`
-- **Platform setup logs**: `/tmp/basic_setup.log`
+
+## 📝 Configuration Examples
+
+### Development Environment
+```hcl
+load_balancer_type = "nlb"           # Simple managed solution
+node_count = 3
+instance_type = "t3.xlarge"         # 16GB RAM
+```
+
+### Production Environment
+```hcl
+load_balancer_type = "nginx"        # Full control
+nginx_instance_count = 2            # HA load balancers
+nginx_instance_type = "t3.large"    # More capacity
+node_count = 3
+instance_type = "r6i.2xlarge"       # 64GB RAM
+```
+
+### High-Performance Environment
+```hcl
+load_balancer_type = "nlb"          # Lowest latency
+node_count = 5                      # Larger cluster
+instance_type = "r6i.4xlarge"       # 128GB RAM
+```
 
 ## 🔄 Upgrades & Maintenance
 
@@ -251,52 +322,14 @@ redis-cli -h demo-12000.your-prefix.your-domain.com -p 12000
 2. Run `terraform plan` to see changes
 3. Apply with `terraform apply`
 
-### Scaling the Cluster
+### Scaling Load Balancers
 
+**For NLB:** Automatic scaling by AWS
+**For NGINX:**
 ```hcl
-# Add more nodes (always use odd numbers: 3, 5, 7, 9)
-node_count = 5
-
-# Increase instance sizes
-instance_type = "r6i.4xlarge"  # 128GB RAM
+nginx_instance_count = 3  # Increase for more capacity
+nginx_instance_type = "t3.large"  # Larger instances
 ```
-
-### Backup Strategy
-
-- **Automated backups**: Configure through Redis Enterprise UI
-- **Infrastructure**: Use `terraform state` backups
-- **DNS**: Route53 records are recreated on apply
-
-## 📝 Module Structure
-
-```
-.
-├── main.tf                    # Main Terraform configuration
-├── variables.tf              # Input variables
-├── outputs.tf               # Output values
-├── terraform.tfvars.example # Example configuration
-├── modules/
-│   ├── vpc/                 # VPC and networking
-│   ├── security_group/      # Security group rules
-│   ├── dns/                 # Route53 DNS records
-│   └── redis_enterprise_cluster/  # Redis Enterprise cluster
-└── scripts/
-    ├── install_ubuntu.sh    # Ubuntu installation script
-    ├── install_rhel.sh      # RHEL installation script
-    ├── basic_setup_ubuntu.sh  # Ubuntu platform setup
-    └── basic_setup_rhel.sh    # RHEL platform setup
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Test your changes thoroughly
-4. Submit a pull request
-
-## 📜 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 📞 Support
 
