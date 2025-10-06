@@ -195,6 +195,12 @@ variable "node_root_size" {
   default     = 50
 }
 
+variable "use_elastic_ips" {
+  description = "Enable Elastic IP addresses for Redis Enterprise nodes (allows stop/start without IP changes)"
+  type        = bool
+  default     = false
+}
+
 variable "data_volume_size" {
   description = "Size of data EBS volume in GB (should be RAM x 4 for testing)"
   type        = number

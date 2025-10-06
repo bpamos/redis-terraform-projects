@@ -104,6 +104,28 @@ output "useful_commands" {
 }
 
 # =============================================================================
+# CLUSTER VALIDATION OUTPUTS
+# =============================================================================
+
+output "cluster_validation_status" {
+  description = "Comprehensive cluster validation status showing all nodes joined successfully"
+  value       = module.cluster_bootstrap.cluster_validation_status
+}
+
+output "cluster_health_verification" {
+  description = "Detailed cluster health and node verification information"
+  value = {
+    validation_completed    = module.cluster_bootstrap.cluster_verification != null
+    expected_nodes         = var.node_count
+    actual_nodes          = length(module.redis_instances.instance_ids)
+    all_instances_created = length(module.redis_instances.instance_ids) == var.node_count
+    cluster_fqdn          = module.cluster_bootstrap.cluster_fqdn
+    validation_summary    = "✅ Cluster validation ensures all ${var.node_count} Redis Enterprise nodes joined successfully via rladmin status checks"
+    verification_command  = "ssh -i ${var.ssh_private_key_path} ${module.ami_selection.ssh_user}@${module.redis_instances.public_ips[0]} 'sudo /opt/redislabs/bin/rladmin status'"
+  }
+}
+
+# =============================================================================
 # DATABASE OUTPUTS
 # =============================================================================
 

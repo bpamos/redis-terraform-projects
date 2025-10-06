@@ -101,6 +101,7 @@ module "redis_instances" {
   node_root_size         = var.node_root_size
   ebs_encryption_enabled = var.ebs_encryption_enabled
   associate_public_ip_address = true
+  use_elastic_ips        = var.use_elastic_ips
   
   # Platform configuration
   user_data_base64 = module.user_data.user_data_base64

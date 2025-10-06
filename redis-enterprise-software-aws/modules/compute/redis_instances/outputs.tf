@@ -8,8 +8,8 @@ output "instance_ids" {
 }
 
 output "public_ips" {
-  description = "List of public IP addresses"
-  value       = aws_instance.redis_enterprise_nodes[*].public_ip
+  description = "List of public IP addresses (EIPs when enabled, otherwise instance public IPs)"
+  value       = var.use_elastic_ips ? aws_eip.redis_enterprise_eips[*].public_ip : aws_instance.redis_enterprise_nodes[*].public_ip
 }
 
 output "private_ips" {
@@ -38,7 +38,7 @@ output "instance_info" {
     for i, instance in aws_instance.redis_enterprise_nodes : 
     "node-${i + 1}" => {
       id                = instance.id
-      public_ip         = instance.public_ip
+      public_ip         = var.use_elastic_ips ? aws_eip.redis_enterprise_eips[i].public_ip : instance.public_ip
       private_ip        = instance.private_ip
       public_dns        = instance.public_dns
       private_dns       = instance.private_dns
@@ -46,6 +46,8 @@ output "instance_info" {
       instance_type     = instance.instance_type
       role             = i == 0 ? "primary" : "replica"
       node_index       = i
+      eip_enabled      = var.use_elastic_ips
+      eip_allocation_id = var.use_elastic_ips ? aws_eip.redis_enterprise_eips[i].allocation_id : null
     }
   }
 }

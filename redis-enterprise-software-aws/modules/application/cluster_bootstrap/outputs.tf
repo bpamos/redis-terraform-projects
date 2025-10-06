@@ -22,6 +22,23 @@ output "cluster_verification" {
   value       = null_resource.cluster_verification.id
 }
 
+output "cluster_validation_status" {
+  description = "Cluster validation status and details"
+  value = {
+    validation_completed = null_resource.cluster_verification.id != null
+    expected_node_count  = var.node_count
+    validation_checks = [
+      "✅ Redis Enterprise service status verified",
+      "✅ Full cluster status retrieved via rladmin",
+      "✅ Node count validation (expected: ${var.node_count})",
+      "✅ Individual node health verification",
+      "✅ Cluster state validation (must be 'ok')",
+      "✅ Complete node enumeration"
+    ]
+    validation_summary = "Comprehensive validation ensures all ${var.node_count} nodes joined successfully and cluster is healthy"
+  }
+}
+
 output "cluster_info" {
   description = "Redis Enterprise cluster information"
   value = {

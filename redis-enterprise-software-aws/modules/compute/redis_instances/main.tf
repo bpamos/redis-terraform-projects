@@ -13,8 +13,8 @@ resource "aws_instance" "redis_enterprise_nodes" {
   vpc_security_group_ids = [var.security_group_id]
   subnet_id             = var.subnet_ids[count.index % length(var.subnet_ids)]
   
-  # Associate public IP for initial setup (can be disabled later for production)
-  associate_public_ip_address = var.associate_public_ip_address
+  # Associate public IP for initial setup (disabled when using EIPs)
+  associate_public_ip_address = var.use_elastic_ips ? false : var.associate_public_ip_address
   
   # Root volume configuration
   root_block_device {
@@ -57,4 +57,28 @@ resource "aws_instance" "redis_enterprise_nodes" {
   depends_on = [
     # No specific dependencies - pure infrastructure
   ]
+}
+
+# =============================================================================
+# ELASTIC IP ADDRESSES (OPTIONAL)
+# =============================================================================
+
+# Elastic IP addresses for Redis Enterprise nodes (optional)
+resource "aws_eip" "redis_enterprise_eips" {
+  count    = var.use_elastic_ips ? var.node_count : 0
+  domain   = "vpc"
+  instance = aws_instance.redis_enterprise_nodes[count.index].id
+  
+  tags = merge(
+    {
+      Name    = "${var.name_prefix}-redis-eip-${count.index + 1}"
+      Owner   = var.owner
+      Project = var.project
+      Type    = "Redis-Enterprise-EIP"
+    },
+    var.tags
+  )
+
+  # Ensure instance is created before EIP
+  depends_on = [aws_instance.redis_enterprise_nodes]
 }

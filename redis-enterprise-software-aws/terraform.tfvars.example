@@ -50,6 +50,7 @@ platform = "ubuntu"              # Choose: "ubuntu" or "rhel"
 # High Availability
 rack_awareness = true             # Enable rack/zone awareness for HA
 flash_enabled  = false           # Enable Redis on Flash (RoF) - optional
+use_elastic_ips = false          # Enable Elastic IPs for persistent public addresses
 
 #==============================================================================
 # NETWORK CONFIGURATION (Optional - Good defaults provided)

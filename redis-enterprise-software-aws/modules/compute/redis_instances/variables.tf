@@ -70,6 +70,12 @@ variable "associate_public_ip_address" {
   default     = true
 }
 
+variable "use_elastic_ips" {
+  description = "Enable Elastic IP addresses for instances"
+  type        = bool
+  default     = false
+}
+
 # =============================================================================
 # NETWORKING
 # =============================================================================
