@@ -3,7 +3,17 @@
 # =============================================================================
 
 variable "name_prefix" {
-  description = "Prefix for resource names"
+  description = "Prefix for resource names (computed from user_prefix-cluster_name)"
+  type        = string
+}
+
+variable "user_prefix" {
+  description = "User identifier prefix"
+  type        = string
+}
+
+variable "cluster_name" {
+  description = "Cluster name suffix"
   type        = string
 }
 

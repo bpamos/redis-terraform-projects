@@ -10,6 +10,12 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+# Local values for AZ selection logic
+locals {
+  # Use specified AZs if provided, otherwise auto-select based on subnet count
+  selected_azs = length(var.availability_zones) > 0 ? var.availability_zones : slice(data.aws_availability_zones.available.names, 0, length(var.public_subnet_cidrs))
+}
+
 # Get hosted zone information for FQDN construction
 data "aws_route53_zone" "main" {
   zone_id = var.dns_hosted_zone_id
@@ -22,11 +28,11 @@ data "aws_route53_zone" "main" {
 module "vpc" {
   source = "./modules/network/vpc"
 
-  name_prefix           = var.name_prefix
+  name_prefix           = local.name_prefix
   vpc_cidr             = var.vpc_cidr
   public_subnet_cidrs  = var.public_subnet_cidrs
   private_subnet_cidrs = var.private_subnet_cidrs
-  azs                  = slice(data.aws_availability_zones.available.names, 0, length(var.public_subnet_cidrs))
+  azs                  = local.selected_azs
   
   owner   = var.owner
   project = var.project
@@ -36,7 +42,7 @@ module "vpc" {
 module "security_group" {
   source = "./modules/network/security_groups"
 
-  name_prefix    = var.name_prefix
+  name_prefix    = local.name_prefix
   vpc_id         = module.vpc.vpc_id
   allow_ssh_from = var.allow_ssh_from
   
@@ -49,7 +55,7 @@ module "dns" {
   source = "./modules/network/dns"
 
   dns_hosted_zone_id = var.dns_hosted_zone_id
-  cluster_fqdn       = var.cluster_fqdn
+  cluster_fqdn       = local.name_prefix
   create_dns_records = var.create_dns_records
   
   # Instance information from compute layer
@@ -57,7 +63,7 @@ module "dns" {
   public_ips  = module.redis_instances.public_ips
   private_ips = module.redis_instances.private_ips
   
-  name_prefix = var.name_prefix
+  name_prefix = local.name_prefix
   owner       = var.owner
   project     = var.project
   tags        = var.tags
@@ -77,7 +83,7 @@ module "user_data" {
   source = "./modules/platform/user_data"
   
   platform = var.platform
-  hostname = "${var.name_prefix}-redis-node"
+  hostname = "${var.user_prefix}-${var.cluster_name}-node"
 }
 
 # =============================================================================
@@ -87,7 +93,9 @@ module "user_data" {
 module "redis_instances" {
   source = "./modules/compute/redis_instances"
 
-  name_prefix  = var.name_prefix
+  name_prefix  = local.name_prefix
+  user_prefix  = var.user_prefix
+  cluster_name = var.cluster_name
   node_count   = var.node_count
   instance_type = var.instance_type
   ami_id       = module.ami_selection.ami_id
@@ -114,9 +122,11 @@ module "redis_instances" {
 module "storage" {
   source = "./modules/compute/storage"
 
-  name_prefix = var.name_prefix
-  node_count  = var.node_count
-  subnet_ids  = module.vpc.public_subnet_ids
+  name_prefix  = local.name_prefix
+  user_prefix  = var.user_prefix
+  cluster_name = var.cluster_name
+  node_count   = var.node_count
+  subnet_ids   = module.vpc.public_subnet_ids
   
   # Instance dependencies
   instance_ids = module.redis_instances.instance_ids
@@ -158,7 +168,7 @@ module "redis_enterprise_install" {
 module "cluster_bootstrap" {
   source = "./modules/application/cluster_bootstrap"
 
-  name_prefix          = var.name_prefix
+  name_prefix          = local.name_prefix
   node_count           = var.node_count
   platform             = var.platform
   ssh_private_key_path = var.ssh_private_key_path
@@ -183,7 +193,7 @@ module "cluster_bootstrap" {
 module "database_management" {
   source = "./modules/application/database_management"
 
-  name_prefix          = var.name_prefix
+  name_prefix          = local.name_prefix
   platform             = var.platform
   ssh_private_key_path = var.ssh_private_key_path
   hosted_zone_name     = data.aws_route53_zone.main.name

@@ -16,6 +16,11 @@ aws_region            = "us-west-2"                      # CHANGE: Your preferre
 key_name              = "your-ec2-key-name"              # CHANGE: Your EC2 key pair name
 ssh_private_key_path  = "path/to/your/private-key.pem"   # CHANGE: Path to your SSH private key
 
+# Availability Zones (OPTIONAL)
+availability_zones = []  # Leave empty for automatic multi-AZ selection
+# availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]  # Specific AZs (multi-AZ)
+# availability_zones = ["us-west-2a"]                              # Single AZ deployment
+
 # DNS Configuration (REQUIRED)
 dns_hosted_zone_id = "YOUR_ROUTE53_HOSTED_ZONE_ID"       # CHANGE: Your Route53 hosted zone ID
 

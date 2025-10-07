@@ -3,13 +3,7 @@ output "hosted_zone_name" {
   value       = var.create_dns_records ? data.aws_route53_zone.main.name : null
 }
 
-output "redis_node_records" {
-  description = "List of node record FQDNs (node1.prefix.domain.com, etc.)"
-  value = var.create_dns_records ? [
-    for i in range(var.node_count) :
-    aws_route53_record.redis_nodes[i].fqdn
-  ] : []
-}
+# Individual node record outputs removed - not required for Redis Enterprise operation
 
 output "redis_node_glue_records" {
   description = "List of NS glue record FQDNs for Redis Enterprise cluster discovery"

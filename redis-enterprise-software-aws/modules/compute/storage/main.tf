@@ -24,7 +24,7 @@ resource "aws_ebs_volume" "redis_data" {
   
   tags = merge(
     {
-      Name    = "${var.name_prefix}-redis-data-${count.index + 1}"
+      Name    = "${var.user_prefix}-${var.cluster_name}-data-${count.index + 1}"
       Owner   = var.owner
       Project = var.project
       Type    = "Redis-Data-Volume"
@@ -57,7 +57,7 @@ resource "aws_ebs_volume" "redis_persistent" {
   
   tags = merge(
     {
-      Name    = "${var.name_prefix}-redis-persistent-${count.index + 1}"
+      Name    = "${var.user_prefix}-${var.cluster_name}-persistent-${count.index + 1}"
       Owner   = var.owner
       Project = var.project
       Type    = "Redis-Persistent-Volume"

@@ -6,7 +6,11 @@ This Terraform project deploys a highly available Redis Enterprise Software clus
 
 - **Multi-Platform Support**: Choose between Ubuntu 22.04 or RHEL 9
 - **High Availability**: 3-node cluster with rack awareness and replication
-- **DNS Integration**: Automatic Route53 DNS records with custom naming
+- **Simplified DNS**: Follows Redis Enterprise documentation with single domain
+- **Flexible Configuration**: Separate `user_prefix` + `cluster_name` variables
+- **Availability Zone Selection**: Choose specific AZs or auto-select multi-AZ
+- **Optional Elastic IPs**: Persistent public IPs for stop/start capability
+- **Comprehensive Validation**: Ensures all nodes join cluster successfully
 - **Security**: Comprehensive security groups with minimal required access
 - **Storage**: Optimized EBS volumes with encryption
 - **Monitoring**: Built-in metrics and health checking
@@ -68,13 +72,22 @@ cp terraform.tfvars.example terraform.tfvars
 Edit `terraform.tfvars`:
 
 ```hcl
-# Required: Update these values
-name_prefix            = "your-redis-cluster"      # Your unique cluster name
-owner                  = "your-name"               # Your name/team
+# Required: Project Configuration
+user_prefix    = "your-name"           # Your unique identifier (e.g., "alice")
+cluster_name   = "redis-ent"          # Cluster name suffix
+owner          = "your-name"          # Your name/team
+
+# Required: AWS Configuration
 aws_region            = "us-west-2"               # Your AWS region
 key_name              = "your-ec2-key"            # Your EC2 key pair
 ssh_private_key_path  = "path/to/your/key.pem"    # Path to private key
 dns_hosted_zone_id    = "YOUR_ROUTE53_HOSTED_ZONE_ID"  # Your Route53 zone ID
+
+# Optional: Availability Zone Selection
+availability_zones = []  # Auto-select multi-AZ, or specify: ["us-west-2a", "us-west-2b", "us-west-2c"]
+
+# Optional: Elastic IPs (for persistent public IPs)
+use_elastic_ips = false  # Set to true if you need persistent IPs for stop/start
 
 # Choose platform: "ubuntu" or "rhel"
 platform = "ubuntu"
@@ -98,9 +111,9 @@ terraform apply
 ### 4. Access Your Cluster
 
 After deployment, you'll see outputs with:
-- **Cluster UI**: `https://your-prefix.your-domain.com:8443`
+- **Cluster UI**: `https://user-prefix-cluster-name.your-domain.com:8443`
 - **SSH Commands**: Connect to individual nodes
-- **Database Connection**: `redis-cli -h demo-12000.your-prefix.your-domain.com -p 12000`
+- **Database Connection**: `redis-cli -h redis-12000.user-prefix-cluster-name.your-domain.com -p 12000`
 
 ## ⚙️ Configuration Options
 
@@ -126,12 +139,35 @@ re_download_url = "REPLACE_WITH_RHEL_REDIS_ENTERPRISE_DOWNLOAD_URL"
 
 ### DNS Naming Convention
 
-With `name_prefix = "my-redis"` and domain `example.com`:
+With `user_prefix = "alice"`, `cluster_name = "redis-ent"` and domain `example.com`:
 
-- **Cluster UI**: `https://my-redis.example.com:8443`
-- **API**: `https://my-redis.example.com:9443`
-- **Nodes**: `node1.my-redis.example.com`, `node2.my-redis.example.com`, etc.
-- **Databases**: `demo-12000.my-redis.example.com` (wildcards supported)
+- **Cluster UI**: `https://alice-redis-ent.example.com:8443`
+- **API**: `https://alice-redis-ent.example.com:9443`
+- **Nodes**: `alice-redis-ent-node-1`, `alice-redis-ent-node-2`, etc.
+- **Databases**: `redis-12000.alice-redis-ent.example.com` (wildcards supported)
+
+### Availability Zone Selection
+
+```hcl
+# Automatic multi-AZ selection (recommended)
+availability_zones = []
+
+# Specific AZs for multi-AZ deployment
+availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
+
+# Single AZ deployment (for testing)
+availability_zones = ["us-west-2a"]
+```
+
+### Elastic IP Configuration
+
+```hcl
+# Enable Elastic IPs for persistent public addresses
+use_elastic_ips = true   # Allows stop/start without IP changes
+
+# Disable for cost savings (default)
+use_elastic_ips = false  # Uses dynamic public IPs
+```
 
 ### Cluster Sizing
 
@@ -185,6 +221,20 @@ ebs_encryption_enabled = true  # Always recommended
    rack_awareness = true  # Distribute replicas across AZs
    ```
 
+## ✅ Cluster Validation
+
+This terraform includes comprehensive validation to ensure all nodes join the cluster successfully:
+
+- **Automatic Node Validation**: Verifies all nodes are online and joined
+- **Retry Logic**: Attempts cluster formation multiple times if needed  
+- **Health Checks**: Validates cluster state and database creation
+- **Clear Error Messages**: Provides debugging information if validation fails
+
+The validation output shows:
+```
+✅ Cluster validation ensures all 3 Redis Enterprise nodes joined successfully via rladmin status checks
+```
+
 ## 📊 Monitoring & Management
 
 ### Useful Commands
@@ -207,13 +257,16 @@ ssh -i key.pem ubuntu@node1.prefix.domain.com 'sudo tail -f /var/opt/redislabs/l
 
 ```bash
 # External connection
-redis-cli -h demo-12000.your-prefix.your-domain.com -p 12000 ping
+redis-cli -h redis-12000.user-prefix-cluster-name.your-domain.com -p 12000 ping
+
+# Internal/VPC connection
+redis-cli -h redis-12000-internal.user-prefix-cluster-name.your-domain.com -p 12000 ping
 
 # Direct IP connection (backup)
 redis-cli -h <node-ip> -p 12000 ping
 
 # Test basic operations
-redis-cli -h demo-12000.your-prefix.your-domain.com -p 12000
+redis-cli -h redis-12000.user-prefix-cluster-name.your-domain.com -p 12000
 > SET test "Hello Redis Enterprise"
 > GET test
 ```
@@ -225,7 +278,10 @@ redis-cli -h demo-12000.your-prefix.your-domain.com -p 12000
 1. **DNS Resolution Failure**
    ```bash
    # Check DNS records
-   dig demo-12000.your-prefix.your-domain.com
+   dig redis-12000.user-prefix-cluster-name.your-domain.com
+   
+   # Check NS delegation
+   dig user-prefix-cluster-name.your-domain.com NS
    
    # Verify Route53 zone ID
    aws route53 list-hosted-zones

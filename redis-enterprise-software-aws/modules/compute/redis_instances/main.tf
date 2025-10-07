@@ -25,7 +25,7 @@ resource "aws_instance" "redis_enterprise_nodes" {
     
     tags = merge(
       {
-        Name    = "${var.name_prefix}-redis-root-${count.index + 1}"
+        Name    = "${var.user_prefix}-${var.cluster_name}-root-${count.index + 1}"
         Owner   = var.owner
         Project = var.project
       },
@@ -38,7 +38,7 @@ resource "aws_instance" "redis_enterprise_nodes" {
 
   tags = merge(
     {
-      Name    = "${var.name_prefix}-redis-node-${count.index + 1}"
+      Name    = "${var.user_prefix}-${var.cluster_name}-node-${count.index + 1}"
       Owner   = var.owner
       Project = var.project
       Type    = "Redis-Enterprise-Node"

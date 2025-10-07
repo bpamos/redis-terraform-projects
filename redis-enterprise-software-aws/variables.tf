@@ -2,15 +2,31 @@
 # PROJECT CONFIGURATION
 # =============================================================================
 
-variable "name_prefix" {
-  description = "Prefix for all resource names"
+variable "user_prefix" {
+  description = "Your unique identifier (e.g., your name or team)"
   type        = string
-  default     = "redis-enterprise"
+  default     = "bamos"
 
   validation {
-    condition     = can(regex("^[a-z][a-z0-9-]*[a-z0-9]$", var.name_prefix)) && length(var.name_prefix) <= 20
-    error_message = "Name prefix must start with a letter, contain only lowercase letters, numbers, and hyphens, and be 20 characters or less."
+    condition     = can(regex("^[a-z][a-z0-9-]*[a-z0-9]$", var.user_prefix)) && length(var.user_prefix) <= 10
+    error_message = "User prefix must start with a letter, contain only lowercase letters, numbers, and hyphens, and be 10 characters or less."
   }
+}
+
+variable "cluster_name" {
+  description = "Redis Enterprise cluster name suffix"
+  type        = string
+  default     = "redis-ent"
+
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]*[a-z0-9]$", var.cluster_name)) && length(var.cluster_name) <= 15
+    error_message = "Cluster name must start with a letter, contain only lowercase letters, numbers, and hyphens, and be 15 characters or less."
+  }
+}
+
+# Computed full name prefix for consistency
+locals {
+  name_prefix = "${var.user_prefix}-${var.cluster_name}"
 }
 
 variable "owner" {
@@ -46,6 +62,17 @@ variable "aws_region" {
   validation {
     condition     = can(regex("^[a-z]{2}-[a-z]+-[0-9]$", var.aws_region))
     error_message = "AWS region must be in the format like us-west-2, us-east-1, etc."
+  }
+}
+
+variable "availability_zones" {
+  description = "List of availability zones to use. If empty, automatically selects AZs based on subnet count."
+  type        = list(string)
+  default     = []
+  
+  validation {
+    condition     = length(var.availability_zones) <= 9
+    error_message = "Maximum of 9 availability zones can be specified."
   }
 }
 
@@ -117,15 +144,7 @@ variable "dns_hosted_zone_id" {
   }
 }
 
-variable "cluster_fqdn" {
-  description = "Cluster name (will be combined with DNS hosted zone to form full FQDN)"
-  type        = string
-
-  validation {
-    condition     = can(regex("^[a-z0-9-]+$", var.cluster_fqdn)) && length(var.cluster_fqdn) > 0
-    error_message = "Cluster name must contain only lowercase letters, numbers, and hyphens."
-  }
-}
+# cluster_fqdn is now computed from user_prefix and cluster_name in locals
 
 variable "create_dns_records" {
   description = "Create DNS A records for Redis Enterprise nodes"
