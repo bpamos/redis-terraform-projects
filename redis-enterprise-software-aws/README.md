@@ -25,6 +25,125 @@ This Terraform project deploys a highly available Redis Enterprise Software clus
 5. **EC2 Key Pair** for SSH access
 6. **Redis Enterprise Download URL** (see Configuration section)
 
+### ✅ Pre-Deployment Validation
+
+Before running Terraform, verify your AWS credentials are properly configured:
+
+```bash
+# Test AWS credentials and permissions
+aws sts get-caller-identity
+
+# Expected output (with your actual account details):
+# {
+#     "UserId": "AIDACKCEVSQ6C2EXAMPLE",
+#     "Account": "123456789012",
+#     "Arn": "arn:aws:iam::123456789012:user/your-username"
+# }
+
+# Test Route53 access (replace with your hosted zone ID)
+aws route53 get-hosted-zone --id YOUR_HOSTED_ZONE_ID
+
+# Test EC2 access in your target region
+aws ec2 describe-availability-zones --region us-west-2
+```
+
+**If any of these commands fail, fix your AWS credentials before proceeding with Terraform.**
+
+### 🔧 AWS Credentials Troubleshooting
+
+If you get errors like `no EC2 IMDS role found` or `credential errors`:
+
+#### Option 1: AWS CLI Configuration (Recommended)
+```bash
+# Configure AWS CLI with your credentials
+aws configure
+
+# This will prompt for:
+# - AWS Access Key ID
+# - AWS Secret Access Key  
+# - Default region name
+# - Default output format (json)
+```
+
+#### Option 2: Environment Variables
+```bash
+# Set environment variables
+export AWS_ACCESS_KEY_ID="your-access-key"
+export AWS_SECRET_ACCESS_KEY="your-secret-key"
+export AWS_DEFAULT_REGION="us-west-2"
+```
+
+#### Option 3: AWS Profile
+```bash
+# If using named profiles
+export AWS_PROFILE=your-profile-name
+
+# Verify profile is working
+aws sts get-caller-identity --profile your-profile-name
+```
+
+#### Common Issues:
+- **Missing credentials**: Run `aws configure` to set them up
+- **Wrong region**: Ensure your AWS region matches your terraform.tfvars
+- **Insufficient permissions**: Your AWS user needs EC2, Route53, and VPC permissions
+- **Credential file location**: Should be in `~/.aws/credentials`
+
+### 🔑 SSH Key Pair Setup
+
+**Important**: The EC2 Key Pair must be created in the same AWS region where you're deploying the cluster.
+
+#### Create SSH Key Pair via AWS Console:
+1. Go to **EC2 Console** → **Key Pairs** in your target region
+2. Click **Create key pair**
+3. Name: `your-name-aws-region` (e.g., `alice-aws-us-west-2`)
+4. Type: **RSA** or **ED25519**
+5. Format: **.pem**
+6. Download the `.pem` file to a secure location
+
+#### Create SSH Key Pair via AWS CLI:
+```bash
+# Set your target region
+export AWS_REGION=us-west-2
+
+# Create key pair and save to file
+aws ec2 create-key-pair \
+    --key-name your-name-aws-${AWS_REGION} \
+    --query 'KeyMaterial' \
+    --output text > ~/desktop/keys/your-name-aws-${AWS_REGION}.pem
+
+# Verify key pair was created
+aws ec2 describe-key-pairs --key-names your-name-aws-${AWS_REGION}
+```
+
+#### Set Correct Permissions:
+```bash
+# SSH requires strict permissions on private key files
+chmod 400 ~/desktop/keys/your-name-aws-us-west-2.pem
+
+# Verify permissions (should show: -r--------)
+ls -la ~/desktop/keys/your-name-aws-us-west-2.pem
+```
+
+#### Update terraform.tfvars:
+```hcl
+# Match these exactly to your key pair
+aws_region           = "us-west-2"  # Same region where key was created
+key_name             = "your-name-aws-us-west-2"  # Exact key pair name in AWS
+ssh_private_key_path = "~/desktop/keys/your-name-aws-us-west-2.pem"  # Local file path
+```
+
+#### Test SSH Key:
+```bash
+# After deployment, test SSH access (replace with actual node IP)
+ssh -i ~/desktop/keys/your-name-aws-us-west-2.pem ubuntu@<node-ip>
+
+# Should connect without password prompt
+# If you get permission denied, check:
+# 1. Key permissions (chmod 400)
+# 2. Key name matches terraform.tfvars
+# 3. Key exists in correct AWS region
+```
+
 ## 🏗️ Architecture
 
 ```
