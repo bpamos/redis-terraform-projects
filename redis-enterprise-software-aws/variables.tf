@@ -58,7 +58,7 @@ variable "aws_region" {
   description = "AWS region to deploy to"
   type        = string
   default     = "us-west-2"
-  
+
   validation {
     condition     = can(regex("^[a-z]{2}-[a-z]+-[0-9]$", var.aws_region))
     error_message = "AWS region must be in the format like us-west-2, us-east-1, etc."
@@ -69,7 +69,7 @@ variable "availability_zones" {
   description = "List of availability zones to use. If empty, automatically selects AZs based on subnet count."
   type        = list(string)
   default     = []
-  
+
   validation {
     condition     = length(var.availability_zones) <= 9
     error_message = "Maximum of 9 availability zones can be specified."
@@ -95,10 +95,10 @@ variable "public_subnet_cidrs" {
   description = "List of public subnet CIDRs"
   type        = list(string)
   default     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  
+
   validation {
-    condition     = length(var.public_subnet_cidrs) >= 3
-    error_message = "At least 3 public subnets are required for Redis Enterprise cluster."
+    condition     = length(var.public_subnet_cidrs) >= 1
+    error_message = "At least 1 public subnet is required. Use 3+ subnets for high availability across multiple AZs."
   }
 }
 
@@ -106,10 +106,10 @@ variable "private_subnet_cidrs" {
   description = "List of CIDRs for private subnets"
   type        = list(string)
   default     = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
-  
+
   validation {
-    condition     = length(var.private_subnet_cidrs) >= 3
-    error_message = "At least 3 private subnets are required for Redis Enterprise cluster."
+    condition     = length(var.private_subnet_cidrs) >= 1
+    error_message = "At least 1 private subnet is required. Use 3+ subnets for high availability across multiple AZs."
   }
 }
 
@@ -159,7 +159,7 @@ variable "create_dns_records" {
 variable "key_name" {
   description = "EC2 key pair name for SSH access"
   type        = string
-  
+
   validation {
     condition     = length(var.key_name) > 0
     error_message = "EC2 key pair name cannot be empty."
@@ -169,7 +169,7 @@ variable "key_name" {
 variable "ssh_private_key_path" {
   description = "Path to the private key file for SSH access"
   type        = string
-  
+
   validation {
     condition     = length(var.ssh_private_key_path) > 0 && can(regex("\\.(pem|key)$", var.ssh_private_key_path))
     error_message = "SSH private key path must be provided and end with .pem or .key."
@@ -274,11 +274,16 @@ variable "cluster_username" {
 variable "cluster_password" {
   description = "Password for Redis Enterprise cluster administration"
   type        = string
-  default     = "RedisEnterprise123!"
+  default     = "RedisEnterprise123"
 
   validation {
     condition     = length(var.cluster_password) >= 4
     error_message = "Cluster password must be at least 4 characters long."
+  }
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9]+$", var.cluster_password))
+    error_message = "Cluster password must contain only alphanumeric characters (letters and numbers). Special characters are not supported due to shell command limitations."
   }
 }
 

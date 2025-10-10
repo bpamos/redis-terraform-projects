@@ -4,10 +4,69 @@
 # Pure EC2 instance management for Redis Enterprise cluster nodes
 # =============================================================================
 
+# Platform-specific AMI selection
+data "aws_ami" "ubuntu" {
+  count       = var.platform == "ubuntu" ? 1 : 0
+  most_recent = true
+  owners      = ["099720109477"] # Canonical
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+}
+
+data "aws_ami" "rhel" {
+  count       = var.platform == "rhel" ? 1 : 0
+  most_recent = true
+  owners      = ["309956199498"] # Red Hat
+
+  filter {
+    name   = "name"
+    values = ["RHEL-9.*_HVM-*-x86_64-*-Hourly2-GP2"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+}
+
+# Platform configuration
+locals {
+  platform_config = {
+    ubuntu = {
+      ami_id = var.platform == "ubuntu" ? data.aws_ami.ubuntu[0].id : null
+      user   = "ubuntu"
+    }
+    rhel = {
+      ami_id = var.platform == "rhel" ? data.aws_ami.rhel[0].id : null
+      user   = "ec2-user"
+    }
+  }
+  
+  selected_config = local.platform_config[var.platform]
+}
+
 # Redis Enterprise cluster nodes
 resource "aws_instance" "redis_enterprise_nodes" {
   count                  = var.node_count
-  ami                    = var.ami_id
+  ami                    = local.selected_config.ami_id
   instance_type          = var.instance_type
   key_name              = var.key_name
   vpc_security_group_ids = [var.security_group_id]

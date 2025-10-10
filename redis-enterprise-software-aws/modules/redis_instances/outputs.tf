@@ -32,6 +32,16 @@ output "availability_zones" {
   value       = aws_instance.redis_enterprise_nodes[*].availability_zone
 }
 
+output "platform_config" {
+  description = "Platform configuration including AMI and user info"
+  value       = local.selected_config
+}
+
+output "selected_ami_id" {
+  description = "Selected AMI ID for the platform"
+  value       = local.selected_config.ami_id
+}
+
 output "instance_info" {
   description = "Comprehensive instance information"
   value = {

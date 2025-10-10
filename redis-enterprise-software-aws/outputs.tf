@@ -34,10 +34,10 @@ output "availability_zones" {
 output "redis_enterprise_cluster_nodes" {
   description = "Information about Redis Enterprise cluster nodes"
   value = {
-    instance_ids  = module.redis_instances.instance_ids
-    public_ips    = module.redis_instances.public_ips
-    private_ips   = module.redis_instances.private_ips
-    public_dns    = module.redis_instances.public_dns
+    instance_ids = module.redis_instances.instance_ids
+    public_ips   = module.redis_instances.public_ips
+    private_ips  = module.redis_instances.private_ips
+    public_dns   = module.redis_instances.public_dns
   }
 }
 
@@ -58,8 +58,8 @@ output "cluster_api_url" {
 output "dns_records" {
   description = "DNS record information"
   value = {
-    hosted_zone_name       = module.dns.hosted_zone_name
-    redis_cluster_fqdn     = module.dns.redis_cluster_fqdn
+    hosted_zone_name        = module.dns.hosted_zone_name
+    redis_cluster_fqdn      = module.dns.redis_cluster_fqdn
     redis_cluster_ns_record = module.dns.redis_cluster_ns_record
     redis_node_glue_records = module.dns.redis_node_glue_records
   }
@@ -73,7 +73,7 @@ output "ssh_commands" {
   description = "SSH commands to connect to each cluster node"
   value = {
     for i in range(length(module.redis_instances.public_ips)) :
-    "node-${i + 1}" => "ssh -i ${var.ssh_private_key_path} ${module.ami_selection.ssh_user}@${module.redis_instances.public_ips[i]}"
+    "node-${i + 1}" => "ssh -i ${var.ssh_private_key_path} ${module.redis_instances.platform_config.user}@${module.redis_instances.public_ips[i]}"
   }
 }
 
@@ -81,10 +81,10 @@ output "cluster_connection_info" {
   description = "Redis Enterprise cluster connection information"
   value = {
     cluster_fqdn = module.cluster_bootstrap.cluster_fqdn
-    ui_port     = 8443
-    api_port    = 9443
-    username    = var.cluster_username
-    password    = var.cluster_password
+    ui_port      = 8443
+    api_port     = 9443
+    username     = var.cluster_username
+    password     = var.cluster_password
   }
   sensitive = true
 }
@@ -96,10 +96,10 @@ output "cluster_connection_info" {
 output "useful_commands" {
   description = "Useful commands for managing the Redis Enterprise cluster"
   value = {
-    check_cluster_status = "ssh -i ${var.ssh_private_key_path} ${module.ami_selection.ssh_user}@${module.redis_instances.public_ips[0]} 'sudo /opt/redislabs/bin/rladmin status'"
-    view_cluster_info    = "ssh -i ${var.ssh_private_key_path} ${module.ami_selection.ssh_user}@${module.redis_instances.public_ips[0]} 'sudo /opt/redislabs/bin/rladmin info cluster'"
-    list_databases       = "ssh -i ${var.ssh_private_key_path} ${module.ami_selection.ssh_user}@${module.redis_instances.public_ips[0]} 'sudo /opt/redislabs/bin/rladmin status databases'"
-    cluster_logs         = "ssh -i ${var.ssh_private_key_path} ${module.ami_selection.ssh_user}@${module.redis_instances.public_ips[0]} 'sudo tail -f /var/opt/redislabs/log/supervisor/*.log'"
+    check_cluster_status = "ssh -i ${var.ssh_private_key_path} ${module.redis_instances.platform_config.user}@${module.redis_instances.public_ips[0]} 'sudo /opt/redislabs/bin/rladmin status'"
+    view_cluster_info    = "ssh -i ${var.ssh_private_key_path} ${module.redis_instances.platform_config.user}@${module.redis_instances.public_ips[0]} 'sudo /opt/redislabs/bin/rladmin info cluster'"
+    list_databases       = "ssh -i ${var.ssh_private_key_path} ${module.redis_instances.platform_config.user}@${module.redis_instances.public_ips[0]} 'sudo /opt/redislabs/bin/rladmin status databases'"
+    cluster_logs         = "ssh -i ${var.ssh_private_key_path} ${module.redis_instances.platform_config.user}@${module.redis_instances.public_ips[0]} 'sudo tail -f /var/opt/redislabs/log/supervisor/*.log'"
   }
 }
 
@@ -115,13 +115,13 @@ output "cluster_validation_status" {
 output "cluster_health_verification" {
   description = "Detailed cluster health and node verification information"
   value = {
-    validation_completed    = module.cluster_bootstrap.cluster_verification != null
-    expected_nodes         = var.node_count
+    validation_completed  = module.cluster_bootstrap.cluster_verification != null
+    expected_nodes        = var.node_count
     actual_nodes          = length(module.redis_instances.instance_ids)
     all_instances_created = length(module.redis_instances.instance_ids) == var.node_count
     cluster_fqdn          = module.cluster_bootstrap.cluster_fqdn
     validation_summary    = "✅ Cluster validation ensures all ${var.node_count} Redis Enterprise nodes joined successfully via rladmin status checks"
-    verification_command  = "ssh -i ${var.ssh_private_key_path} ${module.ami_selection.ssh_user}@${module.redis_instances.public_ips[0]} 'sudo /opt/redislabs/bin/rladmin status'"
+    verification_command  = "ssh -i ${var.ssh_private_key_path} ${module.redis_instances.platform_config.user}@${module.redis_instances.public_ips[0]} 'sudo /opt/redislabs/bin/rladmin status'"
   }
 }
 

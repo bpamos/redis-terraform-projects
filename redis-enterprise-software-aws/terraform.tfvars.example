@@ -8,8 +8,9 @@
 #==============================================================================
 
 # Project identification (REQUIRED)
-name_prefix = "your-unique-prefix"    # CHANGE: Your unique prefix (lowercase, alphanumeric + hyphens)
-owner       = "your-name-or-team"     # CHANGE: Your name/team
+user_prefix  = "your-name"        # CHANGE: Your unique identifier (your name, team, etc.)
+cluster_name = "redis-ent"        # Redis Enterprise cluster name
+owner        = "your-name"        # CHANGE: Your name/team
 
 # AWS Configuration (REQUIRED)
 aws_region            = "us-west-2"                      # CHANGE: Your preferred AWS region
@@ -29,9 +30,9 @@ dns_hosted_zone_id = "YOUR_ROUTE53_HOSTED_ZONE_ID"       # CHANGE: Your Route53 
 # Find the latest download URL for your platform and paste it below
 re_download_url = "REPLACE_WITH_YOUR_REDIS_ENTERPRISE_DOWNLOAD_URL"
 
-# Cluster Credentials
+# Cluster Credentials (Use alphanumeric passwords only!)
 cluster_username = "admin@admin.com"        # Your admin email
-cluster_password = "admin"                  # password
+cluster_password = "admin"  # password (alphanumeric only - no special characters)
 
 # Security (RECOMMENDED)
 # For testing only: use ["0.0.0.0/0"] for open access
@@ -67,7 +68,6 @@ public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
 private_subnet_cidrs = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
 
 # DNS Settings
-cluster_fqdn       = "redis-cluster"  # Internal cluster FQDN (used for NS records)
 create_dns_records = true             # Create DNS records automatically
 
 #==============================================================================

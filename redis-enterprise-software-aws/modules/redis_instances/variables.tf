@@ -46,9 +46,13 @@ variable "node_count" {
   }
 }
 
-variable "ami_id" {
-  description = "AMI ID for Redis Enterprise instances"
+variable "platform" {
+  description = "Platform to deploy (ubuntu or rhel)"
   type        = string
+  validation {
+    condition     = contains(["ubuntu", "rhel"], var.platform)
+    error_message = "Platform must be either 'ubuntu' or 'rhel'."
+  }
 }
 
 variable "instance_type" {
