@@ -5,7 +5,6 @@
 variable "user_prefix" {
   description = "Your unique identifier (e.g., your name or team)"
   type        = string
-  default     = "bamos"
 
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]*[a-z0-9]$", var.user_prefix)) && length(var.user_prefix) <= 10
@@ -263,7 +262,7 @@ variable "re_download_url" {
 variable "cluster_username" {
   description = "Username for Redis Enterprise cluster administration"
   type        = string
-  default     = "admin@redis.com"
+  default     = "admin@admin.com"
 
   validation {
     condition     = can(regex("^[^@]+@[^@]+\\.[^@]+$", var.cluster_username))
@@ -274,7 +273,7 @@ variable "cluster_username" {
 variable "cluster_password" {
   description = "Password for Redis Enterprise cluster administration"
   type        = string
-  default     = "RedisEnterprise123"
+  default     = "admin"
 
   validation {
     condition     = length(var.cluster_password) >= 4
