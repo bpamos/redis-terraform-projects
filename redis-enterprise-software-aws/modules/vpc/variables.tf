@@ -11,7 +11,7 @@ variable "vpc_cidr" {
   description = "CIDR block for the VPC"
   type        = string
   default     = "10.0.0.0/16"
-  
+
   validation {
     condition     = can(cidrhost(var.vpc_cidr, 0))
     error_message = "VPC CIDR must be a valid CIDR block."
@@ -21,7 +21,7 @@ variable "vpc_cidr" {
 variable "public_subnet_cidrs" {
   description = "List of CIDR blocks for public subnets"
   type        = list(string)
-  
+
   validation {
     condition = alltrue([
       for cidr in var.public_subnet_cidrs : can(cidrhost(cidr, 0))
@@ -33,7 +33,7 @@ variable "public_subnet_cidrs" {
 variable "private_subnet_cidrs" {
   description = "List of CIDR blocks for private subnets"
   type        = list(string)
-  
+
   validation {
     condition = alltrue([
       for cidr in var.private_subnet_cidrs : can(cidrhost(cidr, 0))
@@ -45,7 +45,7 @@ variable "private_subnet_cidrs" {
 variable "azs" {
   description = "List of availability zones for subnet placement"
   type        = list(string)
-  
+
   validation {
     condition     = length(var.azs) >= 1
     error_message = "At least one availability zone must be specified."

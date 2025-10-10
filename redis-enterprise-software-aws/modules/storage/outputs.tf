@@ -26,23 +26,23 @@ output "volume_info" {
   description = "Comprehensive volume information"
   value = {
     data_volumes = {
-      for i, volume in aws_ebs_volume.redis_data : 
+      for i, volume in aws_ebs_volume.redis_data :
       "node-${i + 1}" => {
-        id               = volume.id
-        size             = volume.size
-        type             = volume.type
+        id                = volume.id
+        size              = volume.size
+        type              = volume.type
         availability_zone = volume.availability_zone
-        encrypted        = volume.encrypted
+        encrypted         = volume.encrypted
       }
     }
     persistent_volumes = {
-      for i, volume in aws_ebs_volume.redis_persistent : 
+      for i, volume in aws_ebs_volume.redis_persistent :
       "node-${i + 1}" => {
-        id               = volume.id
-        size             = volume.size
-        type             = volume.type
+        id                = volume.id
+        size              = volume.size
+        type              = volume.type
         availability_zone = volume.availability_zone
-        encrypted        = volume.encrypted
+        encrypted         = volume.encrypted
       }
     }
   }

@@ -10,7 +10,7 @@ locals {
     ubuntu = "basic_setup_ubuntu.sh"
     rhel   = "basic_setup_rhel.sh"
   }
-  
+
   selected_script = local.platform_scripts[var.platform]
 }
 

@@ -45,7 +45,7 @@ output "selected_ami_id" {
 output "instance_info" {
   description = "Comprehensive instance information"
   value = {
-    for i, instance in aws_instance.redis_enterprise_nodes : 
+    for i, instance in aws_instance.redis_enterprise_nodes :
     "node-${i + 1}" => {
       id                = instance.id
       public_ip         = var.use_elastic_ips ? aws_eip.redis_enterprise_eips[i].public_ip : instance.public_ip
@@ -54,9 +54,9 @@ output "instance_info" {
       private_dns       = instance.private_dns
       availability_zone = instance.availability_zone
       instance_type     = instance.instance_type
-      role             = i == 0 ? "primary" : "replica"
-      node_index       = i
-      eip_enabled      = var.use_elastic_ips
+      role              = i == 0 ? "primary" : "replica"
+      node_index        = i
+      eip_enabled       = var.use_elastic_ips
       eip_allocation_id = var.use_elastic_ips ? aws_eip.redis_enterprise_eips[i].allocation_id : null
     }
   }

@@ -54,7 +54,7 @@ resource "aws_route53_record" "redis_database_wildcard" {
   name    = "*.${var.name_prefix}.${data.aws_route53_zone.main.name}"
   type    = "A"
   ttl     = 300
-  records = [var.public_ips[0]]  # Primary node public IP for external database access
+  records = [var.public_ips[0]] # Primary node public IP for external database access
 
   depends_on = [data.aws_route53_zone.main]
 }
@@ -67,7 +67,7 @@ resource "aws_route53_record" "redis_database_wildcard_internal" {
   name    = "*-internal.${var.name_prefix}.${data.aws_route53_zone.main.name}"
   type    = "A"
   ttl     = 300
-  records = [var.private_ips[0]]  # Primary node private IP for internal database access
+  records = [var.private_ips[0]] # Primary node private IP for internal database access
 
   depends_on = [data.aws_route53_zone.main]
 }

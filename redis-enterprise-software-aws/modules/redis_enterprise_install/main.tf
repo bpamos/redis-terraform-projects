@@ -16,7 +16,7 @@ locals {
       install_script = "install_redis_enterprise_rhel.sh"
     }
   }
-  
+
   selected_config = local.platform_config[var.platform]
 }
 
@@ -26,10 +26,10 @@ resource "null_resource" "redis_enterprise_installation" {
 
   # Trigger reinstallation when critical parameters change
   triggers = {
-    instance_id         = var.instance_ids[count.index]
-    re_download_url     = var.re_download_url
-    platform           = var.platform
-    data_volume_id      = var.data_volume_attachment_ids[count.index]
+    instance_id          = var.instance_ids[count.index]
+    re_download_url      = var.re_download_url
+    platform             = var.platform
+    data_volume_id       = var.data_volume_attachment_ids[count.index]
     persistent_volume_id = var.persistent_volume_attachment_ids[count.index]
   }
 

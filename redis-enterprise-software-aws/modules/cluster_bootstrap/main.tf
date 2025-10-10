@@ -14,8 +14,8 @@ locals {
       user = "ec2-user"
     }
   }
-  
-  selected_config = local.platform_config[var.platform]
+
+  selected_config   = local.platform_config[var.platform]
   cluster_full_fqdn = "${var.name_prefix}.${var.hosted_zone_name}"
 }
 
@@ -30,10 +30,10 @@ resource "null_resource" "create_cluster" {
     primary_instance_id = var.instance_ids[0]
     cluster_username    = var.cluster_username
     cluster_password    = var.cluster_password
-    cluster_fqdn       = local.cluster_full_fqdn
-    rack_awareness     = var.rack_awareness
-    flash_enabled      = var.flash_enabled
-    installation_id    = var.installation_completion_ids[0]
+    cluster_fqdn        = local.cluster_full_fqdn
+    rack_awareness      = var.rack_awareness
+    flash_enabled       = var.flash_enabled
+    installation_id     = var.installation_completion_ids[0]
   }
 
   # Create cluster and configure external address for private/public endpoints
@@ -216,7 +216,7 @@ resource "null_resource" "cluster_verification" {
       "sudo systemctl status rl-server-manager --no-pager || echo 'Service status check completed'",
       "echo '=== 2. Initial Cluster Status Check ==='",
       "sudo /opt/redislabs/bin/rladmin status",
-      "echo '=== 3. Detailed Cluster Information ==='", 
+      "echo '=== 3. Detailed Cluster Information ==='",
       "sudo /opt/redislabs/bin/rladmin info cluster",
       "echo '=== 4. Patient Validation - Waiting for All Nodes ==='",
       "# Patient validation with retries",

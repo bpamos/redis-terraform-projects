@@ -25,7 +25,7 @@ resource "aws_security_group" "redis_enterprise" {
     from_port   = 8443
     to_port     = 8443
     protocol    = "tcp"
-    cidr_blocks = var.allow_ssh_from  # Same as SSH for security
+    cidr_blocks = var.allow_ssh_from # Same as SSH for security
   }
 
   # Redis Enterprise REST API
@@ -34,7 +34,7 @@ resource "aws_security_group" "redis_enterprise" {
     from_port   = 9443
     to_port     = 9443
     protocol    = "tcp"
-    cidr_blocks = var.allow_ssh_from  # Same as SSH for security
+    cidr_blocks = var.allow_ssh_from # Same as SSH for security
   }
 
   # Redis Enterprise internal cluster communication
@@ -44,7 +44,7 @@ resource "aws_security_group" "redis_enterprise" {
     to_port         = 8001
     protocol        = "tcp"
     security_groups = []
-    self           = true
+    self            = true
   }
 
   # Redis Enterprise internal cluster communication (gossip protocol)
@@ -54,7 +54,7 @@ resource "aws_security_group" "redis_enterprise" {
     to_port         = 8002
     protocol        = "tcp"
     security_groups = []
-    self           = true
+    self            = true
   }
 
   # Redis Enterprise internal cluster communication (discovery service)
@@ -64,7 +64,7 @@ resource "aws_security_group" "redis_enterprise" {
     to_port         = 8004
     protocol        = "tcp"
     security_groups = []
-    self           = true
+    self            = true
   }
 
   # Redis Enterprise Sentinel service
@@ -74,7 +74,7 @@ resource "aws_security_group" "redis_enterprise" {
     to_port         = 8006
     protocol        = "tcp"
     security_groups = []
-    self           = true
+    self            = true
   }
 
   # Redis Enterprise cluster coordination service
@@ -84,7 +84,7 @@ resource "aws_security_group" "redis_enterprise" {
     to_port         = 3356
     protocol        = "tcp"
     security_groups = []
-    self           = true
+    self            = true
   }
 
   # Redis Enterprise gossip communication port range
@@ -94,7 +94,7 @@ resource "aws_security_group" "redis_enterprise" {
     to_port         = 3346
     protocol        = "tcp"
     security_groups = []
-    self           = true
+    self            = true
   }
 
   # Redis Enterprise CRDB coordination
@@ -104,7 +104,7 @@ resource "aws_security_group" "redis_enterprise" {
     to_port         = 9081
     protocol        = "tcp"
     security_groups = []
-    self           = true
+    self            = true
   }
 
   # Redis Enterprise metrics exporter and additional cluster communication
@@ -114,7 +114,7 @@ resource "aws_security_group" "redis_enterprise" {
     to_port         = 8071
     protocol        = "tcp"
     security_groups = []
-    self           = true
+    self            = true
   }
 
   # Redis Enterprise internal proxy
@@ -124,7 +124,7 @@ resource "aws_security_group" "redis_enterprise" {
     to_port         = 8080
     protocol        = "tcp"
     security_groups = []
-    self           = true
+    self            = true
   }
 
   # Redis database ports (default range)
@@ -133,7 +133,7 @@ resource "aws_security_group" "redis_enterprise" {
     from_port   = 10000
     to_port     = 19999
     protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/16"]  # Allow within VPC
+    cidr_blocks = ["10.0.0.0/16"] # Allow within VPC
   }
 
   # Redis database ports for external access
@@ -142,7 +142,7 @@ resource "aws_security_group" "redis_enterprise" {
     from_port   = 10000
     to_port     = 19999
     protocol    = "tcp"
-    cidr_blocks = var.allow_ssh_from  # Same as SSH for security
+    cidr_blocks = var.allow_ssh_from # Same as SSH for security
   }
 
   # Redis Enterprise shard replication ports (CRITICAL for replication links)
@@ -152,7 +152,7 @@ resource "aws_security_group" "redis_enterprise" {
     to_port         = 29999
     protocol        = "tcp"
     security_groups = []
-    self           = true
+    self            = true
   }
 
   # DNS queries for Redis Enterprise cluster DNS
@@ -161,7 +161,7 @@ resource "aws_security_group" "redis_enterprise" {
     from_port   = 53
     to_port     = 53
     protocol    = "udp"
-    cidr_blocks = ["0.0.0.0/0"]  # Allow DNS queries from anywhere
+    cidr_blocks = ["0.0.0.0/0"] # Allow DNS queries from anywhere
   }
 
   # DNS queries for Redis Enterprise cluster DNS (TCP)
@@ -170,7 +170,7 @@ resource "aws_security_group" "redis_enterprise" {
     from_port   = 53
     to_port     = 53
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Allow DNS queries from anywhere
+    cidr_blocks = ["0.0.0.0/0"] # Allow DNS queries from anywhere
   }
 
   # All outbound traffic

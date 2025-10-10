@@ -46,7 +46,7 @@ output "cluster_info" {
     node_count     = var.node_count
     rack_awareness = var.rack_awareness
     flash_enabled  = var.flash_enabled
-    primary_node   = {
+    primary_node = {
       instance_id = var.instance_ids[0]
       public_ip   = var.public_ips[0]
       private_ip  = var.private_ips[0]
