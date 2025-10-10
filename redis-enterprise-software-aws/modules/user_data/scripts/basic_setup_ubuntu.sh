@@ -54,8 +54,19 @@ mount /dev/nvme2n1 /var/opt/redislabs/persist
 echo "/dev/nvme1n1 /var/opt/redislabs xfs defaults,nofail 0 2" >> /etc/fstab
 echo "/dev/nvme2n1 /var/opt/redislabs/persist xfs defaults,nofail 0 2" >> /etc/fstab
 
-# Set proper ownership
-chown -R root:root /var/opt/redislabs
+# Create redislabs user and group (Redis Enterprise installer will use these)
+# This must be done before setting ownership
+if ! getent group redislabs > /dev/null 2>&1; then
+    groupadd redislabs
+fi
+if ! getent passwd redislabs > /dev/null 2>&1; then
+    useradd -g redislabs -d /var/opt/redislabs -s /bin/bash redislabs
+fi
+
+# Set proper ownership per Redis documentation
+# Critical: Must be redislabs:redislabs for Redis Enterprise to function correctly
+# Reference: https://redis.io/docs/latest/operate/rs/installing-upgrading/install/plan-deployment/configuring-aws-instances/#storage
+chown -R redislabs:redislabs /var/opt/redislabs
 chmod 755 /var/opt/redislabs /var/opt/redislabs/persist
 
 # Create marker for completion
