@@ -14,8 +14,8 @@ locals {
       user = "ec2-user"
     }
   }
-  
-  selected_config = local.platform_config[var.platform]
+
+  selected_config   = local.platform_config[var.platform]
   cluster_full_fqdn = var.cluster_fqdn
 }
 
@@ -30,10 +30,10 @@ resource "null_resource" "sample_database" {
   # Trigger database recreation when parameters change
   triggers = {
     cluster_verification_id = var.cluster_verification_id
-    database_name          = var.sample_db_name
-    database_port          = var.sample_db_port
-    database_memory        = var.sample_db_memory
-    cluster_fqdn          = local.cluster_full_fqdn
+    database_name           = var.sample_db_name
+    database_port           = var.sample_db_port
+    database_memory         = var.sample_db_memory
+    cluster_fqdn            = local.cluster_full_fqdn
   }
 
   # Create the sample database using REST API with proper endpoint configuration
@@ -84,6 +84,6 @@ resource "null_resource" "sample_database" {
 # Local values for database endpoints
 locals {
   # Database endpoints (only if sample database is created)
-  sample_database_endpoint = var.create_sample_database ? "${var.sample_db_name}-${var.sample_db_port}.${local.cluster_full_fqdn}" : null
+  sample_database_endpoint         = var.create_sample_database ? "${var.sample_db_name}-${var.sample_db_port}.${local.cluster_full_fqdn}" : null
   sample_database_endpoint_private = var.create_sample_database ? "${var.sample_db_name}-${var.sample_db_port}-internal.${local.cluster_full_fqdn}" : null
 }

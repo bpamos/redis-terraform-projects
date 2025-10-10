@@ -2,15 +2,30 @@
 # PROJECT CONFIGURATION
 # =============================================================================
 
-variable "name_prefix" {
-  description = "Prefix for all resource names"
+variable "user_prefix" {
+  description = "Your unique identifier (e.g., your name or team)"
   type        = string
-  default     = "redis-enterprise"
 
   validation {
-    condition     = can(regex("^[a-z][a-z0-9-]*[a-z0-9]$", var.name_prefix)) && length(var.name_prefix) <= 20
-    error_message = "Name prefix must start with a letter, contain only lowercase letters, numbers, and hyphens, and be 20 characters or less."
+    condition     = can(regex("^[a-z][a-z0-9-]*[a-z0-9]$", var.user_prefix)) && length(var.user_prefix) <= 10
+    error_message = "User prefix must start with a letter, contain only lowercase letters, numbers, and hyphens, and be 10 characters or less."
   }
+}
+
+variable "cluster_name" {
+  description = "Redis Enterprise cluster name suffix"
+  type        = string
+  default     = "redis-ent"
+
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]*[a-z0-9]$", var.cluster_name)) && length(var.cluster_name) <= 15
+    error_message = "Cluster name must start with a letter, contain only lowercase letters, numbers, and hyphens, and be 15 characters or less."
+  }
+}
+
+# Computed full name prefix for consistency
+locals {
+  name_prefix = "${var.user_prefix}-${var.cluster_name}"
 }
 
 variable "owner" {
@@ -26,7 +41,7 @@ variable "owner" {
 variable "project" {
   description = "Project or environment name"
   type        = string
-  default     = "redis-enterprise-software-aws"
+  default     = "redis-enterprise-software-aws-lb"
 
   validation {
     condition     = length(var.project) > 0 && length(var.project) <= 50
@@ -42,10 +57,21 @@ variable "aws_region" {
   description = "AWS region to deploy to"
   type        = string
   default     = "us-west-2"
-  
+
   validation {
     condition     = can(regex("^[a-z]{2}-[a-z]+-[0-9]$", var.aws_region))
     error_message = "AWS region must be in the format like us-west-2, us-east-1, etc."
+  }
+}
+
+variable "availability_zones" {
+  description = "List of availability zones to use. If empty, automatically selects AZs based on subnet count."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = length(var.availability_zones) <= 9
+    error_message = "Maximum of 9 availability zones can be specified."
   }
 }
 
@@ -54,14 +80,19 @@ variable "aws_region" {
 # =============================================================================
 
 variable "load_balancer_type" {
-  description = "Load balancer type: 'nlb' (AWS Network Load Balancer - managed), 'haproxy' (HAProxy on EC2 - self-managed), or 'nginx' (NGINX on EC2 - self-managed with stream module)"
+  description = "Type of load balancer to deploy: nlb (AWS Network Load Balancer), haproxy (self-managed HAProxy), or nginx (self-managed NGINX)"
   type        = string
-  default     = "nlb"
 
   validation {
     condition     = contains(["nlb", "haproxy", "nginx"], var.load_balancer_type)
     error_message = "Load balancer type must be 'nlb', 'haproxy', or 'nginx'."
   }
+}
+
+variable "haproxy_instance_type" {
+  description = "EC2 instance type for HAProxy load balancers (only used when load_balancer_type = 'haproxy')"
+  type        = string
+  default     = "t3.medium"
 }
 
 # =============================================================================
@@ -78,7 +109,7 @@ variable "nginx_instance_count" {
   description = "Number of NGINX instances to deploy for high availability (only used when load_balancer_type = 'nginx')"
   type        = number
   default     = 2
-  
+
   validation {
     condition     = var.nginx_instance_count >= 1 && var.nginx_instance_count <= 10
     error_message = "NGINX instance count must be between 1 and 10."
@@ -135,9 +166,9 @@ variable "database_port_range_start" {
   description = "Start of database port range to open for Redis Enterprise databases (inclusive)"
   type        = number
   default     = null
-  
+
   validation {
-    condition = var.database_port_range_start == null || (var.database_port_range_start >= 10000 && var.database_port_range_start <= 19999)
+    condition     = var.database_port_range_start == null || (var.database_port_range_start >= 10000 && var.database_port_range_start <= 19999)
     error_message = "Database port range start must be between 10000-19999 (Redis Enterprise database port range)."
   }
 }
@@ -146,9 +177,9 @@ variable "database_port_range_end" {
   description = "End of database port range to open for Redis Enterprise databases (inclusive)"
   type        = number
   default     = null
-  
+
   validation {
-    condition = var.database_port_range_end == null || (var.database_port_range_end >= 10000 && var.database_port_range_end <= 19999)
+    condition     = var.database_port_range_end == null || (var.database_port_range_end >= 10000 && var.database_port_range_end <= 19999)
     error_message = "Database port range end must be between 10000-19999 (Redis Enterprise database port range)."
   }
 }
@@ -157,7 +188,7 @@ variable "database_lb_method" {
   description = "Load balancing method for database connections: least_conn, round_robin, ip_hash, hash (only used when load_balancer_type = 'nginx')"
   type        = string
   default     = "least_conn"
-  
+
   validation {
     condition     = contains(["least_conn", "round_robin", "ip_hash", "hash"], var.database_lb_method)
     error_message = "Database LB method must be one of: least_conn, round_robin, ip_hash, hash."
@@ -168,7 +199,7 @@ variable "api_lb_method" {
   description = "Load balancing method for API connections: least_conn, round_robin, ip_hash, hash (only used when load_balancer_type = 'nginx')"
   type        = string
   default     = "round_robin"
-  
+
   validation {
     condition     = contains(["least_conn", "round_robin", "ip_hash", "hash"], var.api_lb_method)
     error_message = "API LB method must be one of: least_conn, round_robin, ip_hash, hash."
@@ -179,7 +210,7 @@ variable "ui_lb_method" {
   description = "Load balancing method for UI connections: least_conn, round_robin, ip_hash, hash (only used when load_balancer_type = 'nginx')"
   type        = string
   default     = "ip_hash"
-  
+
   validation {
     condition     = contains(["least_conn", "round_robin", "ip_hash", "hash"], var.ui_lb_method)
     error_message = "UI LB method must be one of: least_conn, round_robin, ip_hash, hash."
@@ -223,7 +254,7 @@ variable "public_subnet_cidrs" {
   description = "List of public subnet CIDRs"
   type        = list(string)
   default     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  
+
   validation {
     condition     = length(var.public_subnet_cidrs) >= 3
     error_message = "At least 3 public subnets are required for Redis Enterprise cluster."
@@ -234,7 +265,7 @@ variable "private_subnet_cidrs" {
   description = "List of CIDRs for private subnets"
   type        = list(string)
   default     = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
-  
+
   validation {
     condition     = length(var.private_subnet_cidrs) >= 3
     error_message = "At least 3 private subnets are required for Redis Enterprise cluster."
@@ -266,7 +297,7 @@ variable "allow_ssh_from" {
 variable "key_name" {
   description = "EC2 key pair name for SSH access"
   type        = string
-  
+
   validation {
     condition     = length(var.key_name) > 0
     error_message = "EC2 key pair name cannot be empty."
@@ -276,7 +307,7 @@ variable "key_name" {
 variable "ssh_private_key_path" {
   description = "Path to the private key file for SSH access"
   type        = string
-  
+
   validation {
     condition     = length(var.ssh_private_key_path) > 0 && can(regex("\\.(pem|key)$", var.ssh_private_key_path))
     error_message = "SSH private key path must be provided and end with .pem or .key."
@@ -319,6 +350,12 @@ variable "node_root_size" {
   description = "Root EBS volume size in GB for Redis Enterprise nodes"
   type        = number
   default     = 50
+}
+
+variable "use_elastic_ips" {
+  description = "Enable Elastic IP addresses for Redis Enterprise nodes (allows stop/start without IP changes)"
+  type        = bool
+  default     = false
 }
 
 variable "data_volume_size" {
@@ -364,7 +401,7 @@ variable "re_download_url" {
 variable "cluster_username" {
   description = "Username for Redis Enterprise cluster administration"
   type        = string
-  default     = "admin@redis.com"
+  default     = "admin@admin.com"
 
   validation {
     condition     = can(regex("^[^@]+@[^@]+\\.[^@]+$", var.cluster_username))
@@ -375,11 +412,16 @@ variable "cluster_username" {
 variable "cluster_password" {
   description = "Password for Redis Enterprise cluster administration"
   type        = string
-  default     = "RedisEnterprise123!"
+  default     = "admin"
 
   validation {
     condition     = length(var.cluster_password) >= 4
     error_message = "Cluster password must be at least 4 characters long."
+  }
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9]+$", var.cluster_password))
+    error_message = "Cluster password must contain only alphanumeric characters (letters and numbers). Special characters are not supported due to shell command limitations."
   }
 }
 

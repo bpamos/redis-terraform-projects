@@ -35,7 +35,7 @@ output "availability_zones" {
 output "instance_info" {
   description = "Comprehensive instance information"
   value = {
-    for i, instance in aws_instance.redis_enterprise_nodes : 
+    for i, instance in aws_instance.redis_enterprise_nodes :
     "node-${i + 1}" => {
       id                = instance.id
       public_ip         = instance.public_ip
@@ -44,8 +44,8 @@ output "instance_info" {
       private_dns       = instance.private_dns
       availability_zone = instance.availability_zone
       instance_type     = instance.instance_type
-      role             = i == 0 ? "primary" : "replica"
-      node_index       = i
+      role              = i == 0 ? "primary" : "replica"
+      node_index        = i
     }
   }
 }

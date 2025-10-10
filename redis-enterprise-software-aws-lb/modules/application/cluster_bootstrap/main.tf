@@ -14,8 +14,8 @@ locals {
       user = "ec2-user"
     }
   }
-  
-  selected_config = local.platform_config[var.platform]
+
+  selected_config   = local.platform_config[var.platform]
   cluster_full_fqdn = var.cluster_fqdn
 }
 
@@ -30,10 +30,10 @@ resource "null_resource" "create_cluster" {
     primary_instance_id = var.instance_ids[0]
     cluster_username    = var.cluster_username
     cluster_password    = var.cluster_password
-    cluster_fqdn       = local.cluster_full_fqdn
-    rack_awareness     = var.rack_awareness
-    flash_enabled      = var.flash_enabled
-    installation_id    = var.installation_completion_ids[0]
+    cluster_fqdn        = local.cluster_full_fqdn
+    rack_awareness      = var.rack_awareness
+    flash_enabled       = var.flash_enabled
+    installation_id     = var.installation_completion_ids[0]
   }
 
   # Create cluster and configure external address for private/public endpoints
@@ -194,23 +194,23 @@ resource "null_resource" "load_balancer_config" {
   provisioner "remote-exec" {
     inline = [
       "echo 'Configuring cluster for load balancer compatibility...'",
-      
+
       # Configure proxy policies for load balancer compatibility
       "echo 'Setting proxy policies: all-nodes for both sharded and non-sharded databases...'",
       "sudo /opt/redislabs/bin/rladmin tune cluster default_sharded_proxy_policy all-nodes default_non_sharded_proxy_policy all-nodes",
-      
+
       # Enable handle_redirects for load balancer compatibility
       "echo 'Enabling handle_redirects for load balancer compatibility...'",
       "sudo /opt/redislabs/bin/rladmin cluster config handle_redirects enabled",
-      
+
       # Optional: Enable sparse shard placement for better load balancing
       "echo 'Enabling sparse shard placement for optimal load balancing...'",
       "sudo /opt/redislabs/bin/rladmin tune cluster default_shards_placement sparse",
-      
+
       # Verify configuration
       "echo 'Verifying load balancer configuration...'",
       "sudo /opt/redislabs/bin/rladmin info cluster | grep -E 'default_.*_proxy_policy|handle_redirects|default_shards_placement'",
-      
+
       "echo 'Load balancer configuration completed successfully'"
     ]
 

@@ -21,7 +21,7 @@ resource "aws_ebs_volume" "redis_data" {
   size              = var.data_volume_size
   type              = var.data_volume_type
   encrypted         = var.ebs_encryption_enabled
-  
+
   tags = merge(
     {
       Name    = "${var.name_prefix}-redis-data-${count.index + 1}"
@@ -39,7 +39,7 @@ resource "aws_volume_attachment" "redis_data_attachment" {
   device_name = "/dev/sdf"
   volume_id   = aws_ebs_volume.redis_data[count.index].id
   instance_id = var.instance_ids[count.index]
-  
+
   depends_on = [aws_ebs_volume.redis_data]
 }
 
@@ -54,7 +54,7 @@ resource "aws_ebs_volume" "redis_persistent" {
   size              = var.persistent_volume_size
   type              = var.persistent_volume_type
   encrypted         = var.ebs_encryption_enabled
-  
+
   tags = merge(
     {
       Name    = "${var.name_prefix}-redis-persistent-${count.index + 1}"
@@ -72,6 +72,6 @@ resource "aws_volume_attachment" "redis_persistent_attachment" {
   device_name = "/dev/sdg"
   volume_id   = aws_ebs_volume.redis_persistent[count.index].id
   instance_id = var.instance_ids[count.index]
-  
+
   depends_on = [aws_ebs_volume.redis_persistent]
 }

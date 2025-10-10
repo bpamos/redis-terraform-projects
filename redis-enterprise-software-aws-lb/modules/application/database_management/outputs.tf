@@ -18,7 +18,7 @@ output "sample_database_endpoint" {
 }
 
 output "sample_database_endpoint_private" {
-  description = "Sample database connection info (port only - combine with load balancer endpoint)" 
+  description = "Sample database connection info (port only - combine with load balancer endpoint)"
   value       = var.create_sample_database ? var.sample_db_port : null
 }
 

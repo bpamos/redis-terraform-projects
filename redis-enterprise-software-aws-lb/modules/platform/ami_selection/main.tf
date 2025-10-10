@@ -60,6 +60,6 @@ locals {
       user   = "ec2-user"
     }
   }
-  
+
   selected_config = local.platform_config[var.platform]
 }

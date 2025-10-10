@@ -63,7 +63,7 @@ variable "platform" {
   description = "Platform for NGINX instances (ubuntu or rhel)"
   type        = string
   default     = "ubuntu"
-  
+
   validation {
     condition     = contains(["ubuntu", "rhel"], var.platform)
     error_message = "Platform must be either 'ubuntu' or 'rhel'."
@@ -80,7 +80,7 @@ variable "nginx_instance_count" {
   description = "Number of NGINX instances to deploy for high availability"
   type        = number
   default     = 2
-  
+
   validation {
     condition     = var.nginx_instance_count >= 1 && var.nginx_instance_count <= 10
     error_message = "NGINX instance count must be between 1 and 10."
@@ -179,7 +179,7 @@ variable "database_lb_method" {
   description = "Load balancing method for database connections"
   type        = string
   default     = "least_conn"
-  
+
   validation {
     condition     = contains(["least_conn", "round_robin", "ip_hash", "hash"], var.database_lb_method)
     error_message = "Database LB method must be one of: least_conn, round_robin, ip_hash, hash."
@@ -190,7 +190,7 @@ variable "api_lb_method" {
   description = "Load balancing method for API connections"
   type        = string
   default     = "round_robin"
-  
+
   validation {
     condition     = contains(["least_conn", "round_robin", "ip_hash", "hash"], var.api_lb_method)
     error_message = "API LB method must be one of: least_conn, round_robin, ip_hash, hash."
@@ -201,7 +201,7 @@ variable "ui_lb_method" {
   description = "Load balancing method for UI connections"
   type        = string
   default     = "ip_hash"
-  
+
   validation {
     condition     = contains(["least_conn", "round_robin", "ip_hash", "hash"], var.ui_lb_method)
     error_message = "UI LB method must be one of: least_conn, round_robin, ip_hash, hash."
@@ -294,7 +294,7 @@ variable "log_level" {
   description = "NGINX error log level (debug, info, notice, warn, error, crit)"
   type        = string
   default     = "warn"
-  
+
   validation {
     condition     = contains(["debug", "info", "notice", "warn", "error", "crit"], var.log_level)
     error_message = "Log level must be one of: debug, info, notice, warn, error, crit."

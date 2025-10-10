@@ -5,7 +5,7 @@
 variable "load_balancer_type" {
   description = "Type of load balancer to deploy: nlb, haproxy, or nginx"
   type        = string
-  
+
   validation {
     condition     = contains(["nlb", "haproxy", "nginx"], var.load_balancer_type)
     error_message = "Load balancer type must be 'nlb', 'haproxy', or 'nginx'."

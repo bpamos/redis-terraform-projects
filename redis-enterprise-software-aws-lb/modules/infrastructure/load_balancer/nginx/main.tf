@@ -9,41 +9,41 @@
 locals {
   platform_config = {
     ubuntu = {
-      user = "ubuntu"
+      user       = "ubuntu"
       ami_filter = "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"
-      ami_owner = "099720109477"
+      ami_owner  = "099720109477"
     }
     rhel = {
-      user = "ec2-user"
+      user       = "ec2-user"
       ami_filter = "RHEL-9.*-x86_64-*"
-      ami_owner = "309956199498"
+      ami_owner  = "309956199498"
     }
   }
-  
+
   selected_config = local.platform_config[var.platform]
-  
+
   # Generate port range list if configured
   port_range_list = var.database_port_range_start != null && var.database_port_range_end != null ? [
     for port in range(var.database_port_range_start, var.database_port_range_end + 1) : port
   ] : []
-  
+
   # NGINX configuration template variables
   nginx_config_vars = {
     private_ips = var.private_ips
-    
+
     # Frontend ports (what clients connect to)
     frontend_database_port = var.frontend_database_port
-    frontend_api_port     = var.frontend_api_port
-    frontend_ui_port      = var.frontend_ui_port
-    
+    frontend_api_port      = var.frontend_api_port
+    frontend_ui_port       = var.frontend_ui_port
+
     # Backend ports (where Redis Enterprise services run)
     database_port = var.backend_database_port
     api_port      = var.backend_api_port
     ui_port       = var.backend_ui_port
-    
+
     # Additional database ports if configured
     additional_database_ports = var.additional_database_ports
-    
+
     # Database port range configuration
     database_port_range_list = local.port_range_list
   }
@@ -56,17 +56,17 @@ locals {
 data "aws_ami" "nginx" {
   most_recent = true
   owners      = [local.selected_config.ami_owner]
-  
+
   filter {
     name   = "name"
     values = [local.selected_config.ami_filter]
   }
-  
+
   filter {
     name   = "state"
     values = ["available"]
   }
-  
+
   filter {
     name   = "virtualization-type"
     values = ["hvm"]
@@ -172,26 +172,26 @@ resource "aws_security_group" "nginx" {
 
 resource "aws_instance" "nginx" {
   count = var.nginx_instance_count # Configurable number of instances
-  
+
   ami                         = data.aws_ami.nginx.id
   instance_type               = var.instance_type
   key_name                    = var.key_name
   vpc_security_group_ids      = [aws_security_group.nginx.id]
   subnet_id                   = var.public_subnet_ids[count.index % length(var.public_subnet_ids)]
   associate_public_ip_address = true
-  
+
   # No user_data - we'll install NGINX through provisioners for better control
-  
+
   root_block_device {
     volume_type = "gp3"
     volume_size = 20
     encrypted   = true
-    
+
     tags = merge(var.tags, {
       Name = "${var.name_prefix}-nginx-${count.index + 1}-root"
     })
   }
-  
+
   tags = merge(var.tags, {
     Name = "${var.name_prefix}-nginx-${count.index + 1}"
     Type = "NGINX-LoadBalancer"
@@ -205,7 +205,7 @@ resource "aws_instance" "nginx" {
 
 resource "null_resource" "nginx_installation" {
   count = length(aws_instance.nginx)
-  
+
   # Trigger reinstallation if instance changes
   triggers = {
     nginx_instance_id = aws_instance.nginx[count.index].id
@@ -251,7 +251,7 @@ resource "null_resource" "nginx_installation" {
 
 resource "null_resource" "nginx_config" {
   count = length(aws_instance.nginx)
-  
+
   # Trigger configuration update when Redis nodes change
   triggers = {
     nginx_instance_id = aws_instance.nginx[count.index].id
@@ -261,7 +261,7 @@ resource "null_resource" "nginx_config" {
 
   # Upload NGINX configuration
   provisioner "file" {
-    content = templatefile("${path.module}/templates/nginx.conf.tpl", local.nginx_config_vars)
+    content     = templatefile("${path.module}/templates/nginx.conf.tpl", local.nginx_config_vars)
     destination = "/tmp/nginx.conf"
 
     connection {
@@ -305,7 +305,7 @@ resource "null_resource" "nginx_config" {
 
 resource "null_resource" "nginx_health_check" {
   count = length(aws_instance.nginx)
-  
+
   triggers = {
     nginx_config_id = null_resource.nginx_config[count.index].id
   }

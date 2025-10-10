@@ -8,25 +8,31 @@
 #==============================================================================
 
 # Project identification (REQUIRED)
-name_prefix = "your-unique-prefix"    # CHANGE: Your unique prefix (lowercase, alphanumeric + hyphens)
-owner       = "your-name-or-team"     # CHANGE: Your name/team
+user_prefix  = "your-name"        # CHANGE: Your unique identifier (your name, team, etc.)
+cluster_name = "redis-ent"        # Redis Enterprise cluster name
+owner        = "your-name"        # CHANGE: Your name/team
 
 # AWS Configuration (REQUIRED)
 aws_region            = "us-west-2"                      # CHANGE: Your preferred AWS region
 key_name              = "your-ec2-key-name"              # CHANGE: Your EC2 key pair name
 ssh_private_key_path  = "path/to/your/private-key.pem"   # CHANGE: Path to your SSH private key
 
+# Availability Zones (OPTIONAL)
+availability_zones = []  # Leave empty for automatic multi-AZ selection
+# availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]  # Specific AZs (multi-AZ)
+# availability_zones = ["us-west-2a"]                              # Single AZ deployment
+
 # Load Balancer Configuration (REQUIRED)
-load_balancer_type = "nlb"                               # CHANGE: Choose "nlb" (AWS managed) or "haproxy" (self-managed)
+load_balancer_type = "nlb"                                     # CHANGE: Choose "nlb" (AWS managed), "haproxy" (self-managed), or "nginx" (self-managed with stream module)
 
 # Redis Enterprise Software (REQUIRED)
 # Visit: https://redis.io/docs/latest/operate/rs/installing-upgrading/install/plan-deployment/supported-platforms/
 # Find the latest download URL for your platform and paste it below
 re_download_url = "REPLACE_WITH_YOUR_REDIS_ENTERPRISE_DOWNLOAD_URL"
 
-# Cluster Credentials (REQUIRED - Use Secure Passwords!)
-cluster_username = "admin@your-domain.com"    # CHANGE: Your admin email
-cluster_password = "YourSecurePassword123!"   # CHANGE: Strong password (min 8 chars)
+# Cluster Credentials (Use alphanumeric passwords only!)
+cluster_username = "admin@admin.com"        # Your admin email
+cluster_password = "admin"  # password (alphanumeric only - no special characters)
 
 # Security (RECOMMENDED)
 # For testing only: use ["0.0.0.0/0"] for open access
@@ -37,7 +43,7 @@ allow_ssh_from = ["YOUR.PUBLIC.IP.ADDRESS/32"]  # CHANGE: Your public IP for SSH
 #==============================================================================
 
 # Basic Settings
-project = "redis-enterprise-software-aws"
+project = "redis-enterprise-software-aws-lb"
 
 # Cluster Size and Performance
 node_count     = 3               # Number of Redis nodes (minimum 3)
@@ -50,6 +56,7 @@ platform = "ubuntu"              # Choose: "ubuntu" or "rhel"
 # High Availability
 rack_awareness = true             # Enable rack/zone awareness for HA
 flash_enabled  = false           # Enable Redis on Flash (RoF) - optional
+use_elastic_ips = false          # Enable Elastic IPs for persistent public addresses
 
 #==============================================================================
 # NETWORK CONFIGURATION (Optional - Good defaults provided)
@@ -59,8 +66,6 @@ flash_enabled  = false           # Enable Redis on Flash (RoF) - optional
 vpc_cidr             = "10.0.0.0/16"
 public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
 private_subnet_cidrs = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
-
-# Load Balancer Settings (configured automatically based on load_balancer_type above)
 
 #==============================================================================
 # STORAGE CONFIGURATION (Optional - Good defaults provided)
@@ -93,38 +98,85 @@ tags = {
 }
 
 #==============================================================================
+# NGINX LOAD BALANCER CONFIGURATION (Optional - Good defaults provided)
+#==============================================================================
+
+# NGINX Instance Configuration (only used when load_balancer_type = "nginx")
+nginx_instance_type       = "t3.medium"    # EC2 instance type for NGINX load balancers
+nginx_instance_count      = 2              # Number of NGINX instances for HA
+
+# API and UI Port Mapping (frontend = client-facing, backend = Redis Enterprise internal)
+frontend_api_port         = 9443           # Redis Enterprise API port (HTTPS)
+backend_api_port          = 9443           # Redis Enterprise API internal port
+frontend_ui_port          = 443            # Redis Enterprise UI port (HTTPS)
+backend_ui_port           = 8443           # Redis Enterprise UI internal port
+
+# Load Balancing Methods
+api_lb_method             = "round_robin"  # API LB: round_robin is good for stateless calls
+ui_lb_method              = "ip_hash"      # UI LB: ip_hash for session affinity
+
+# Health Check Configuration
+max_fails                 = 3              # Max failures before marking server down
+fail_timeout              = "30s"          # Time server marked down after max_fails
+proxy_timeout             = "1s"           # Connection timeout to backend
+
+# Database Port Range Configuration
+# This automatically opens and configures load balancing for a range of Redis Enterprise database ports
+# All databases (including the sample database) should be within this range
+database_port_range_start = 12000    # Start of port range (inclusive) - includes sample DB port
+database_port_range_end   = 12010    # End of port range (inclusive)
+
+# Alternative: Individual database ports (commented out - use port range above instead)
+# additional_database_ports = [
+#   {
+#     name          = "cache-db"
+#     frontend_port = 6380
+#     backend_port  = 12001
+#   },
+#   {
+#     name          = "session-db"
+#     frontend_port = 6381
+#     backend_port  = 12002
+#   }
+# ]
+
+#==============================================================================
+# HAPROXY LOAD BALANCER CONFIGURATION (Optional - Good defaults provided)
+#==============================================================================
+
+# HAProxy Instance Configuration (only used when load_balancer_type = "haproxy")
+haproxy_instance_type = "t3.medium"    # EC2 instance type for HAProxy load balancers
+
+#==============================================================================
 # 🔗 HELPFUL INFORMATION
 #==============================================================================
-# 
-# After deployment, your cluster will be accessible at:
-# • UI Access:  https://name-prefix.your-domain.com:8443
-# • API Access: https://name-prefix.your-domain.com:9443
-# 
-# Database endpoints will be created as:
-# • External: redis-12000.name-prefix.your-domain.com:12000
-# • Internal: redis-12000-internal.name-prefix.your-domain.com:12000
 #
-# Example with name_prefix="my-redis" and domain="example.com":
-# • UI:       https://my-redis.example.com:8443
-# • Database: redis-12000.my-redis.example.com:12000 (public)
-# • Database: redis-12000-internal.my-redis.example.com:12000 (private/VPC)
+# After deployment, your cluster will be accessible via the load balancer:
+# • NLB:     Access via NLB DNS name (shown in outputs)
+# • HAProxy: Access via HAProxy public IP (shown in outputs)
+# • NGINX:   Access via NGINX public IPs (shown in outputs)
+#
+# Load balancer endpoints will provide access to:
+# • UI Access:       Port 8443 (or frontend_ui_port for NGINX)
+# • API Access:      Port 9443 (or frontend_api_port for NGINX)
+# • Database Access: Port 12000+ (or database_port_range for NGINX)
 #
 #==============================================================================
 # 🔒 SECURITY REMINDERS
 #==============================================================================
-# 
+#
 # ✅ DO:
 # • Use strong, unique passwords
-# • Store SSH keys securely 
+# • Store SSH keys securely
 # • Restrict SSH access to your IP
-# • Keep hosted zone ID confidential
 # • Never commit terraform.tfvars to git
-# 
+#
 # ⚠️  PRODUCTION:
 # • Use AWS Systems Manager for secrets
 # • Enable additional monitoring
 # • Configure backup strategies
 # • Review security group rules
 # • Consider private subnets for nodes
+# • Configure SSL/TLS termination on load balancers
 #
 #==============================================================================

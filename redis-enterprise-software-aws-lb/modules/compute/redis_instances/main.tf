@@ -9,20 +9,20 @@ resource "aws_instance" "redis_enterprise_nodes" {
   count                  = var.node_count
   ami                    = var.ami_id
   instance_type          = var.instance_type
-  key_name              = var.key_name
+  key_name               = var.key_name
   vpc_security_group_ids = [var.security_group_id]
-  subnet_id             = var.subnet_ids[count.index % length(var.subnet_ids)]
-  
+  subnet_id              = var.subnet_ids[count.index % length(var.subnet_ids)]
+
   # Associate public IP for initial setup (can be disabled later for production)
   associate_public_ip_address = var.associate_public_ip_address
-  
+
   # Root volume configuration
   root_block_device {
     volume_type           = "gp3"
     volume_size           = var.node_root_size
-    encrypted            = var.ebs_encryption_enabled
+    encrypted             = var.ebs_encryption_enabled
     delete_on_termination = true
-    
+
     tags = merge(
       {
         Name    = "${var.name_prefix}-redis-root-${count.index + 1}"
@@ -38,11 +38,11 @@ resource "aws_instance" "redis_enterprise_nodes" {
 
   tags = merge(
     {
-      Name    = "${var.name_prefix}-redis-node-${count.index + 1}"
-      Owner   = var.owner
-      Project = var.project
-      Type    = "Redis-Enterprise-Node"
-      Role    = count.index == 0 ? "primary" : "replica"
+      Name      = "${var.name_prefix}-redis-node-${count.index + 1}"
+      Owner     = var.owner
+      Project   = var.project
+      Type      = "Redis-Enterprise-Node"
+      Role      = count.index == 0 ? "primary" : "replica"
       NodeIndex = count.index
     },
     var.tags

@@ -9,13 +9,13 @@ resource "aws_lb" "redis_enterprise" {
   name               = "${var.name_prefix}-redis-nlb"
   internal           = false
   load_balancer_type = "network"
-  
+
   # Deploy across multiple AZs for high availability
   subnets = var.public_subnet_ids
-  
-  enable_deletion_protection = false
+
+  enable_deletion_protection       = false
   enable_cross_zone_load_balancing = true
-  
+
   tags = merge(var.tags, {
     Name = "${var.name_prefix}-redis-nlb"
     Type = "Redis-Enterprise-LoadBalancer"
@@ -32,14 +32,22 @@ resource "aws_lb_target_group" "cluster_ui" {
   port     = 8443
   protocol = "TCP"
   vpc_id   = var.vpc_id
-  
+
+  # Connection draining / deregistration delay
+  # Default: 300 seconds (5 minutes) - allows existing connections to complete gracefully
+  # PERFORMANCE TUNING: For faster failover, consider reducing to 30-60 seconds
+  # Trade-off: Lower values = faster failover but may terminate active connections
+  # deregistration_delay = 30  # Uncomment and adjust for faster failover
+
   # Enable session stickiness for Redis Enterprise UI (required per Redis documentation)
   stickiness {
     enabled = true
     type    = "source_ip"
   }
-  
+
   # Health check configuration
+  # Current settings: 30s interval × 2 unhealthy checks = ~60s detection time
+  # Combined with 300s deregistration delay = ~6 minutes total failover time
   health_check {
     enabled             = true
     healthy_threshold   = 2
@@ -49,7 +57,7 @@ resource "aws_lb_target_group" "cluster_ui" {
     timeout             = 6
     unhealthy_threshold = 2
   }
-  
+
   tags = merge(var.tags, {
     Name = "${var.name_prefix}-ui-tg"
     Type = "Redis-Enterprise-UI-TargetGroup"
@@ -62,7 +70,7 @@ resource "aws_lb_target_group" "rest_api" {
   port     = 9443
   protocol = "TCP"
   vpc_id   = var.vpc_id
-  
+
   # Health check configuration
   health_check {
     enabled             = true
@@ -73,7 +81,7 @@ resource "aws_lb_target_group" "rest_api" {
     timeout             = 6
     unhealthy_threshold = 2
   }
-  
+
   tags = merge(var.tags, {
     Name = "${var.name_prefix}-api-tg"
     Type = "Redis-Enterprise-API-TargetGroup"
@@ -84,12 +92,12 @@ resource "aws_lb_target_group" "rest_api" {
 # Note: NLB doesn't support port ranges, so we'll create for common database ports
 resource "aws_lb_target_group" "database_ports" {
   count = 10 # Create target groups for ports 12000-12009 as examples
-  
+
   name     = "${var.name_prefix}-db-${12000 + count.index}"
   port     = 12000 + count.index
   protocol = "TCP"
   vpc_id   = var.vpc_id
-  
+
   # Health check configuration
   health_check {
     enabled             = true
@@ -100,7 +108,7 @@ resource "aws_lb_target_group" "database_ports" {
     timeout             = 6
     unhealthy_threshold = 2
   }
-  
+
   tags = merge(var.tags, {
     Name = "${var.name_prefix}-db-${12000 + count.index}-tg"
     Type = "Redis-Enterprise-Database-TargetGroup"
@@ -116,7 +124,7 @@ resource "aws_lb_listener" "cluster_ui" {
   load_balancer_arn = aws_lb.redis_enterprise.arn
   port              = "8443"
   protocol          = "TCP"
-  
+
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.cluster_ui.arn
@@ -128,7 +136,7 @@ resource "aws_lb_listener" "rest_api" {
   load_balancer_arn = aws_lb.redis_enterprise.arn
   port              = "9443"
   protocol          = "TCP"
-  
+
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.rest_api.arn
@@ -138,11 +146,11 @@ resource "aws_lb_listener" "rest_api" {
 # Listeners for Database ports
 resource "aws_lb_listener" "database_ports" {
   count = length(aws_lb_target_group.database_ports)
-  
+
   load_balancer_arn = aws_lb.redis_enterprise.arn
   port              = tostring(12000 + count.index)
   protocol          = "TCP"
-  
+
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.database_ports[count.index].arn

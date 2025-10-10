@@ -35,8 +35,8 @@ output "load_balancer_arn" {
 output "target_group_arns" {
   description = "ARNs of target groups"
   value = {
-    cluster_ui   = aws_lb_target_group.cluster_ui.arn
-    rest_api     = aws_lb_target_group.rest_api.arn
+    cluster_ui     = aws_lb_target_group.cluster_ui.arn
+    rest_api       = aws_lb_target_group.rest_api.arn
     database_ports = aws_lb_target_group.database_ports[*].arn
   }
 }
