@@ -144,6 +144,53 @@ output "database_private_port" {
 }
 
 # =============================================================================
+# TLS DATABASE OUTPUTS
+# =============================================================================
+
+output "tls_database_id" {
+  description = "TLS Redis Cloud database ID"
+  value       = module.redis_database_tls.database_id
+}
+
+output "tls_database_name" {
+  description = "TLS Redis Cloud database name"
+  value       = module.redis_database_tls.database_name
+}
+
+output "tls_database_endpoint" {
+  description = "TLS Redis Cloud database public endpoint"
+  value       = module.redis_database_tls.database_endpoint
+  sensitive   = false
+}
+
+output "tls_database_private_endpoint" {
+  description = "TLS Redis Cloud database private endpoint"
+  value       = module.redis_database_tls.database_private_endpoint
+  sensitive   = false
+}
+
+output "tls_database_password" {
+  description = "TLS Redis Cloud database password"
+  value       = module.redis_database_tls.database_password
+  sensitive   = true
+}
+
+output "tls_connection_string" {
+  description = "TLS Redis database connection string"
+  value       = module.redis_database_tls.database_connection_string
+  sensitive   = true
+}
+
+output "tls_redis_cli_command" {
+  description = "Redis CLI command to connect to TLS database (use --tls option)"
+  value = format("redis-cli -h %s -p %s -a %s --tls",
+    split(":", module.redis_database_tls.database_endpoint)[0],
+    split(":", module.redis_database_tls.database_endpoint)[1],
+    module.redis_database_tls.database_password)
+  sensitive = true
+}
+
+# =============================================================================
 # OBSERVABILITY OUTPUTS
 # =============================================================================
 

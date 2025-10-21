@@ -6,24 +6,44 @@ This repository contains a collection of standalone Terraform projects for deplo
 
 ```
 redis-terraform-projects/
-├── README.md                                      # This file
-├── redis-cloud-migration-demo/                    # Complete Redis Cloud migration workflow
-├── redis-cloud-plus-aws-vpc-with-ec2/            # Redis Cloud with VPC peering and EC2
-├── redis-cloud-plus-aws-vpc-peering/             # Redis Cloud VPC peering
-├── redis-cloud-plus-aws-vpc-with-ec2-security/   # Redis Cloud with enhanced security
-├── redis-cloud-plus-aws-vpc-with-ec2-roles-acls/ # Redis Cloud with RBAC
-├── redis-cloud-basic/                             # Basic Redis Cloud deployment
-├── redis-cloud-riot/                              # Redis Cloud + RIOT migration tools
-├── redis-enterprise-software-aws/                 # Redis Enterprise Software with DNS
-├── redis-enterprise-software-aws-lb/              # Redis Enterprise Software with Load Balancers
-├── elasticache-only/                              # AWS ElastiCache Redis deployment
-├── riot-tooling-only/                             # RIOT tools with local Redis OSS
-└── vpc-only/                                      # Standalone VPC infrastructure
+├── README.md                           # This file
+├── redis-cloud-simple/                 # ⭐ SIMPLE: Redis Cloud + VPC (no modules, 4 files)
+│
+├── redis-cloud/                        # Redis Cloud Deployments
+│   ├── redis-cloud-basic/              # Basic Redis Cloud deployment
+│   ├── redis-cloud-migration-demo/     # Complete migration workflow with cutover UI
+│   ├── redis-cloud-plus-aws-vpc-peering/         # Redis Cloud VPC peering
+│   ├── redis-cloud-plus-aws-vpc-with-ec2/        # Redis Cloud with VPC peering and EC2
+│   └── redis-cloud-riot/               # Redis Cloud + RIOT migration tools
+│
+├── redis-enterprise-software/          # Redis Enterprise Software Deployments
+│   ├── redis-enterprise-software-aws/  # Redis Enterprise with Route53 DNS
+│   ├── redis-enterprise-software-aws-eks/        # Redis Enterprise on EKS
+│   └── redis-enterprise-software-aws-lb/         # Redis Enterprise with Load Balancers
+│
+└── other-infra/                        # Supporting Infrastructure
+    ├── elasticache-only/               # AWS ElastiCache Redis deployment
+    ├── riot-tooling-only/              # RIOT tools with local Redis OSS
+    └── vpc-only/                       # Standalone VPC infrastructure
 ```
 
 ## Projects Overview
 
+### ⭐ redis-cloud-simple
+**The Simplest Redis Cloud Setup** - Learn Redis Cloud + AWS in minutes:
+- **4 files total** - No modules, everything in plain sight
+- **Hardcoded values** - Sensible defaults, just add credentials
+- **<300 lines** of Terraform code
+- **Perfect for**: Learning, PoC, understanding the basics
+- **Deploy time**: <5 minutes
+- Redis Cloud 1GB database + AWS VPC + VPC peering
+- See full version: `redis-cloud/redis-cloud-plus-aws-vpc-with-ec2`
+
+## Redis Cloud Projects
+
 ### 🚀 redis-cloud-migration-demo
+**Location**: `redis-cloud/redis-cloud-migration-demo/`
+
 **Complete Redis Cloud migration workflow** - End-to-end migration infrastructure including:
 - AWS VPC with public/private subnets
 - Redis Cloud subscription and database
@@ -33,7 +53,49 @@ redis-terraform-projects/
 - Comprehensive monitoring and observability
 - Cutover management UI
 
+### ☁️ redis-cloud-plus-aws-vpc-with-ec2
+**Location**: `redis-cloud/redis-cloud-plus-aws-vpc-with-ec2/`
+
+**Redis Cloud with VPC Peering and EC2** - Complete Redis Cloud setup:
+- Redis Cloud subscription and database
+- AWS VPC with EC2 instances
+- VPC peering for private connectivity
+- Security groups and networking
+- Optional Prometheus/Grafana monitoring
+- Great for hybrid cloud architectures
+
+### 🌐 redis-cloud-plus-aws-vpc-peering
+**Location**: `redis-cloud/redis-cloud-plus-aws-vpc-peering/`
+
+**Redis Cloud VPC Peering** - Simplified VPC peering setup:
+- Redis Cloud subscription
+- AWS VPC peering configuration
+- Minimal setup for network connectivity
+- Foundation for private Redis Cloud access
+
+### ☁️ redis-cloud-basic
+**Location**: `redis-cloud/redis-cloud-basic/`
+
+**Basic Redis Cloud** - Minimal Redis Cloud deployment:
+- Redis Cloud subscription and database
+- Basic networking configuration
+- Ideal for testing Redis Cloud features in isolation
+
+### 🔧 redis-cloud-riot
+**Location**: `redis-cloud/redis-cloud-riot/`
+
+**Redis Cloud + Migration Tools** - Redis Cloud with RIOT tooling:
+- Redis Cloud subscription and database
+- AWS VPC and networking
+- RIOT EC2 instance with migration tools
+- VPC peering for private connectivity
+- Perfect for Redis Cloud migration projects
+
+## Redis Enterprise Software Projects
+
 ### 🏢 redis-enterprise-software-aws
+**Location**: `redis-enterprise-software/redis-enterprise-software-aws/`
+
 **Redis Enterprise Software with DNS** - Production-ready Redis Enterprise cluster:
 - Multi-platform support (Ubuntu 22.04 or RHEL 9)
 - 3-node HA cluster with rack awareness across AZs
@@ -44,6 +106,8 @@ redis-terraform-projects/
 - Perfect for production Redis Enterprise deployments
 
 ### ⚖️ redis-enterprise-software-aws-lb
+**Location**: `redis-enterprise-software/redis-enterprise-software-aws-lb/`
+
 **Redis Enterprise Software with Load Balancers** - Redis Enterprise with multiple LB options:
 - Choice of AWS Network Load Balancer (NLB), NGINX, or HAProxy
 - Multi-platform support (Ubuntu 22.04 or RHEL 9)
@@ -52,50 +116,20 @@ redis-terraform-projects/
 - Advanced NGINX configurations (port mapping, health checks, load balancing methods)
 - Ideal for production deployments requiring custom load balancing
 
-### ☁️ redis-cloud-plus-aws-vpc-with-ec2
-**Redis Cloud with VPC Peering and EC2** - Complete Redis Cloud setup:
-- Redis Cloud subscription and database
-- AWS VPC with EC2 instances
-- VPC peering for private connectivity
-- Security groups and networking
-- Great for hybrid cloud architectures
+### 📦 redis-enterprise-software-aws-eks
+**Location**: `redis-enterprise-software/redis-enterprise-software-aws-eks/`
 
-### 🔐 redis-cloud-plus-aws-vpc-with-ec2-security
-**Redis Cloud with Enhanced Security** - Security-focused Redis Cloud deployment:
-- Redis Cloud with advanced security features
-- VPC peering and private connectivity
-- Enhanced security groups and access controls
-- Perfect for security-conscious deployments
+**Redis Enterprise Software on EKS** - Redis Enterprise deployed on Amazon EKS:
+- Kubernetes-based deployment
+- EKS cluster with Redis Enterprise operator
+- Container-native architecture
+- Ideal for cloud-native applications
 
-### 👥 redis-cloud-plus-aws-vpc-with-ec2-roles-acls
-**Redis Cloud with RBAC** - Redis Cloud with role-based access control:
-- Redis Cloud subscription with ACLs
-- Role-based access control configuration
-- VPC peering and EC2 instances
-- Ideal for multi-tenant or team-based deployments
-
-### 🌐 redis-cloud-plus-aws-vpc-peering
-**Redis Cloud VPC Peering** - Simplified VPC peering setup:
-- Redis Cloud subscription
-- AWS VPC peering configuration
-- Minimal setup for network connectivity
-- Foundation for private Redis Cloud access
-
-### ☁️ redis-cloud-basic
-**Basic Redis Cloud** - Minimal Redis Cloud deployment:
-- Redis Cloud subscription and database
-- Basic networking configuration
-- Ideal for testing Redis Cloud features in isolation
-
-### 🔧 redis-cloud-riot
-**Redis Cloud + Migration Tools** - Redis Cloud with RIOT tooling:
-- Redis Cloud subscription and database
-- AWS VPC and networking
-- RIOT EC2 instance with migration tools
-- VPC peering for private connectivity
-- Perfect for Redis Cloud migration projects
+## Supporting Infrastructure Projects
 
 ### 🛠️ riot-tooling-only
+**Location**: `other-infra/riot-tooling-only/`
+
 **RIOT Tools + Local Redis** - Migration tooling environment:
 - AWS VPC and EC2 infrastructure
 - RIOT-X migration tools
@@ -104,6 +138,8 @@ redis-terraform-projects/
 - Great for testing migration scripts and tooling
 
 ### 🏗️ elasticache-only
+**Location**: `other-infra/elasticache-only/`
+
 **AWS ElastiCache** - AWS-native Redis deployment:
 - AWS VPC with subnets
 - ElastiCache Redis cluster
@@ -111,6 +147,8 @@ redis-terraform-projects/
 - Ideal for AWS-native Redis testing
 
 ### 🌐 vpc-only
+**Location**: `other-infra/vpc-only/`
+
 **VPC Infrastructure** - Reusable networking foundation:
 - AWS VPC with public/private subnets
 - Internet Gateway and route tables
@@ -275,20 +313,20 @@ Each project follows consistent patterns:
 
 ## Available Projects
 
-| Project | Type | Key Features |
-|---------|------|--------------|
-| redis-cloud-migration-demo | Migration | Complete migration workflow with cutover UI |
-| redis-enterprise-software-aws | Enterprise | Redis Enterprise with Route53 DNS, multi-AZ HA |
-| redis-enterprise-software-aws-lb | Enterprise | Redis Enterprise with NLB/NGINX/HAProxy options |
-| redis-cloud-plus-aws-vpc-with-ec2 | Cloud | Redis Cloud with VPC peering and EC2 |
-| redis-cloud-plus-aws-vpc-with-ec2-security | Cloud | Redis Cloud with enhanced security |
-| redis-cloud-plus-aws-vpc-with-ec2-roles-acls | Cloud | Redis Cloud with RBAC and ACLs |
-| redis-cloud-plus-aws-vpc-peering | Cloud | Simplified VPC peering setup |
-| redis-cloud-basic | Cloud | Minimal Redis Cloud deployment |
-| redis-cloud-riot | Migration | Redis Cloud + RIOT migration tools |
-| riot-tooling-only | Tooling | RIOT tools + local Redis OSS + monitoring |
-| elasticache-only | AWS Native | AWS ElastiCache deployment |
-| vpc-only | Networking | Standalone VPC infrastructure |
+| Project | Location | Type | Key Features |
+|---------|----------|------|--------------|
+| **redis-cloud-simple** ⭐ | `./ (root)` | **Learning** | **Simplest setup - 4 files, no modules, <300 lines** |
+| redis-cloud-migration-demo | `redis-cloud/` | Migration | Complete migration workflow with cutover UI |
+| redis-cloud-plus-aws-vpc-with-ec2 | `redis-cloud/` | Cloud | Redis Cloud with VPC peering and EC2 |
+| redis-cloud-plus-aws-vpc-peering | `redis-cloud/` | Cloud | Simplified VPC peering setup |
+| redis-cloud-basic | `redis-cloud/` | Cloud | Minimal Redis Cloud deployment |
+| redis-cloud-riot | `redis-cloud/` | Migration | Redis Cloud + RIOT migration tools |
+| redis-enterprise-software-aws | `redis-enterprise-software/` | Enterprise | Redis Enterprise with Route53 DNS, multi-AZ HA |
+| redis-enterprise-software-aws-lb | `redis-enterprise-software/` | Enterprise | Redis Enterprise with NLB/NGINX/HAProxy options |
+| redis-enterprise-software-aws-eks | `redis-enterprise-software/` | Enterprise | Redis Enterprise on Amazon EKS |
+| riot-tooling-only | `other-infra/` | Tooling | RIOT tools + local Redis OSS + monitoring |
+| elasticache-only | `other-infra/` | AWS Native | AWS ElastiCache deployment |
+| vpc-only | `other-infra/` | Networking | Standalone VPC infrastructure |
 
 ## Contributing
 
