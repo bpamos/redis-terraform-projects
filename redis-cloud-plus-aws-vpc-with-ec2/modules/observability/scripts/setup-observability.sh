@@ -93,37 +93,71 @@ sleep 10
 TARGET_STATUS=$(curl -s http://localhost:9090/api/v1/targets | grep -o '"health":"[^"]*"' | head -1)
 echo "Redis Cloud target status: $TARGET_STATUS"
 
-# Download and import Redis Cloud dashboards
-echo "Downloading and importing Redis Cloud dashboards..."
+# Download and import official Redis Cloud operational dashboards
+echo "Downloading official Redis Cloud operational dashboards..."
 mkdir -p /home/ubuntu/dashboards
 
-# Download official Redis Field Engineering dashboards
-curl -s https://raw.githubusercontent.com/redis-field-engineering/redis-enterprise-observability/main/grafana/dashboards/grafana_v9-11/cloud/basic/redis-cloud-database-dashboard_v9-11.json > /home/ubuntu/dashboards/redis-database.json
-curl -s https://raw.githubusercontent.com/redis-field-engineering/redis-enterprise-observability/main/grafana/dashboards/grafana_v9-11/cloud/basic/redis-cloud-subscription-dashboard_v9-11.json > /home/ubuntu/dashboards/redis-subscription.json
-curl -s https://raw.githubusercontent.com/redis-field-engineering/redis-enterprise-observability/main/grafana/dashboards/grafana_v9-11/cloud/basic/redis-cloud-proxy-dashboard_v9-11.json > /home/ubuntu/dashboards/redis-proxy.json
+# Base URL for official Redis Cloud operational dashboards
+BASE_URL="https://raw.githubusercontent.com/redis-field-engineering/redis-enterprise-observability/main/grafana_v2/dashboards/grafana_v9-11/cloud/ops"
 
-# Fix datasource references (replace template variables with actual datasource name)
-sed -i 's/\${DS_PROMETHEUS}/Prometheus/g' /home/ubuntu/dashboards/*.json
+# Download all official operational dashboards
+echo "Downloading Active-Active dashboard..."
+curl -s "$BASE_URL/active-active.json" > /home/ubuntu/dashboards/active-active.json
+
+echo "Downloading Cluster dashboard..."
+curl -s "$BASE_URL/cluster.json" > /home/ubuntu/dashboards/cluster.json
+
+echo "Downloading Database dashboard..."
+curl -s "$BASE_URL/database.json" > /home/ubuntu/dashboards/database.json
+
+echo "Downloading Latency dashboard..."
+curl -s "$BASE_URL/latency.json" > /home/ubuntu/dashboards/latency.json
+
+echo "Downloading Node dashboard..."
+curl -s "$BASE_URL/node.json" > /home/ubuntu/dashboards/node.json
+
+echo "Downloading QPS dashboard..."
+curl -s "$BASE_URL/qps.json" > /home/ubuntu/dashboards/qps.json
+
+echo "Downloading Shard dashboard..."
+curl -s "$BASE_URL/shard.json" > /home/ubuntu/dashboards/shard.json
+
+# Replace DS_PROMETHEUS variable with redis-cloud datasource name
+echo "Configuring datasource references..."
+for file in /home/ubuntu/dashboards/*.json; do
+    sed -i 's/\${DS_PROMETHEUS}/redis-cloud/g' "$file"
+done
 
 # Wait for Grafana to be fully ready
 echo "Waiting for Grafana to be ready for API calls..."
 sleep 20
 
-# Import dashboards via Grafana API
-echo "Importing Redis Cloud Database dashboard..."
-curl -X POST http://admin:admin@localhost:3000/api/dashboards/db \
-  -H "Content-Type: application/json" \
-  -d "{\"dashboard\": $(cat /home/ubuntu/dashboards/redis-database.json), \"overwrite\": true}" > /dev/null 2>&1
+# Import all official dashboards via Grafana API
+echo "Importing all official Redis Cloud operational dashboards..."
+for dashboard in active-active cluster database latency node qps shard; do
+    echo "Importing $dashboard dashboard..."
+    #  Create import payload using python to ensure valid JSON
+    python3 -c "
+import json
+with open('/home/ubuntu/dashboards/$dashboard.json', 'r') as f:
+    dashboard_data = json.load(f)
+import_payload = {'dashboard': dashboard_data, 'overwrite': True}
+with open('/tmp/import-$dashboard.json', 'w') as f:
+    json.dump(import_payload, f)
+"
 
-echo "Importing Redis Cloud Subscription dashboard..."
-curl -X POST http://admin:admin@localhost:3000/api/dashboards/db \
-  -H "Content-Type: application/json" \
-  -d "{\"dashboard\": $(cat /home/ubuntu/dashboards/redis-subscription.json), \"overwrite\": true}" > /dev/null 2>&1
+    # Use curl to import dashboard from file
+    result=$(curl -s -X POST http://admin:admin@localhost:3000/api/dashboards/db \
+        -H "Content-Type: application/json" \
+        -d @/tmp/import-$dashboard.json)
 
-echo "Importing Redis Cloud Proxy dashboard..."
-curl -X POST http://admin:admin@localhost:3000/api/dashboards/db \
-  -H "Content-Type: application/json" \
-  -d "{\"dashboard\": $(cat /home/ubuntu/dashboards/redis-proxy.json), \"overwrite\": true}" > /dev/null 2>&1
+    # Check if import was successful
+    if echo "$result" | grep -q '"status":"success"'; then
+        echo "✅ $dashboard dashboard imported successfully"
+    else
+        echo "⚠️ $dashboard dashboard import may have failed"
+    fi
+done
 
 # Verify dashboards were imported
 DASHBOARD_COUNT=$(curl -s http://admin:admin@localhost:3000/api/search | grep -c '"title"')
@@ -135,10 +169,17 @@ echo "=== Redis Cloud Observability Setup Complete ==="
 echo "📊 Prometheus: http://$PUBLIC_IP:9090"
 echo "📈 Grafana:    http://$PUBLIC_IP:3000 (admin/admin)"
 echo ""
-echo "✅ Available Redis Cloud Dashboards:"
-echo "   - Database Status Dashboard"
-echo "   - Subscription Status Dashboard" 
-echo "   - Proxy Threads Dashboard"
+echo "✅ Official Redis Cloud Operational Dashboards:"
+echo "   - Active-Active Dashboard - Redis Cloud Active-Active replication metrics"
+echo "   - Cluster Dashboard - Redis Cloud cluster-level performance and health metrics"
+echo "   - Database Dashboard - Redis Cloud database performance and operations metrics"
+echo "   - Latency Dashboard - Redis Cloud latency and response time metrics"
+echo "   - Node Dashboard - Redis Cloud node-level resource and performance metrics"
+echo "   - QPS Dashboard - Redis Cloud queries per second and throughput metrics"
+echo "   - Shard Dashboard - Redis Cloud shard-level performance and distribution metrics"
+echo ""
+echo "📋 Source: Official Redis Field Engineering operational dashboards"
+echo "📚 Documentation: https://github.com/redis-field-engineering/redis-enterprise-observability"
 echo ""
 echo "Redis Cloud monitoring is ready! 🚀"
 echo ""

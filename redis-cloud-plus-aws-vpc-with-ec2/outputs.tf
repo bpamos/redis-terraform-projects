@@ -160,7 +160,7 @@ output "grafana_url" {
 output "grafana_credentials" {
   description = "Grafana login credentials (if observability enabled)"
   value       = var.enable_observability && var.enable_ec2_testing ? module.observability[0].grafana_credentials : null
-  sensitive   = true
+  sensitive   = false
 }
 
 output "monitoring_info" {
@@ -173,3 +173,4 @@ output "dashboard_urls" {
   description = "Direct URLs to Redis Cloud dashboards (if observability enabled)"
   value       = var.enable_observability && var.enable_ec2_testing ? module.observability[0].dashboard_urls : null
 }
+

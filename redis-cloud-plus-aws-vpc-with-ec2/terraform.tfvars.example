@@ -79,12 +79,12 @@ cloud_account_id  = 1                  # Redis Labs cloud account (default)
 multi_az          = true
 
 # Creation plan (subscription capacity planning)
-initial_dataset_size_in_gb = 1         # Initial capacity planning
-initial_database_quantity  = 1         # Number of databases to plan for
-initial_replication        = true      # Enable replication in plan
+initial_dataset_size_in_gb = 1         # Single database capacity planning
+initial_database_quantity  = 1         # Single database deployment
+initial_replication        = true      # Enable HA replication in plan
 initial_throughput_by      = "operations-per-second"
-initial_throughput_value   = 2000      # Combined initial throughput
-initial_modules            = []        # Add modules per database
+initial_throughput_value   = 1000      # Database throughput planning
+initial_modules            = []        # Add modules per database (defined per-database below)
 
 # Maintenance window
 maintenance_start_hour = 22            # 22:00 UTC (adjust for your timezone)
@@ -130,3 +130,57 @@ tags = {
   purpose     = "redis-cloud-production"
   team        = "platform"
 }
+
+# =============================================================================
+# EXTRA OPTIONAL CONFIGURATION
+# All settings below are optional advanced features with default values
+# Uncomment and modify only if you need these specific capabilities
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SUBSCRIPTION - ADVANCED SETTINGS
+# -----------------------------------------------------------------------------
+
+# Network allowlist (only when using your own cloud account, cloud_account_id != 1)
+# allowlist_security_group_ids = null  # e.g., ["sg-1234567890abcdef0"]
+# allowlist_cidrs = null               # e.g., ["10.0.0.0/16", "192.168.1.0/24"]
+
+# Customer Managed Key (CMK) for encryption
+# customer_managed_key_resource_name = null  # Cloud provider key resource name
+
+# -----------------------------------------------------------------------------
+# DATABASE - ADVANCED SETTINGS
+# -----------------------------------------------------------------------------
+
+# Protocol and API configuration
+# protocol = null                                # "redis" or "memcached"
+# support_oss_cluster_api = null                 # Enable Redis OSS Cluster API
+# resp_version = null                            # "resp2" or "resp3"
+# external_endpoint_for_oss_cluster_api = null   # Use external endpoint for OSS API
+
+# TLS/SSL configuration
+# enable_tls = false                             # Enable TLS encryption
+# client_ssl_certificate = null                  # SSL certificate for client auth
+# client_tls_certificates = null                 # List of TLS certificates
+
+# Replication configuration
+# replica_of = null                              # e.g., ["redis://user:pass@host:port"]
+
+# Memory and eviction policies
+# data_eviction = null                           # "allkeys-lru", "volatile-lru", "noeviction", etc.
+# average_item_size_in_bytes = null              # For ram-and-flash clusters
+
+# Access control
+# password = null                                # Custom password (auto-generated if null)
+# source_ips = null                              # e.g., ["192.168.10.0/32", "192.168.12.0/24"]
+# enable_default_user = null                     # Enable default user connections
+
+# Networking configuration
+# port = null                                    # Custom port (10000-19999)
+# hashing_policy = null                          # Custom sharding rules
+
+# Remote backup configuration
+# remote_backup_interval = null                  # "every-1-hours", "every-12-hours", etc.
+# remote_backup_time_utc = null                  # "14:00" (required for 12/24 hour intervals)
+# remote_backup_storage_type = null              # "aws-s3", "gcp-storage", "azure-blob-storage"
+# remote_backup_storage_path = null              # Storage URI

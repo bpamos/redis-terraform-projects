@@ -18,15 +18,14 @@ output "grafana_credentials" {
     username = "admin"
     password = "admin"
   }
-  sensitive = true
+  sensitive = false
 }
 
 output "dashboard_urls" {
-  description = "Direct URLs to Redis Cloud dashboards"
+  description = "Direct URLs to Redis Cloud operational dashboards"
   value = {
-    database_dashboard    = "http://${var.instance_public_ip}:3000/d/oVMyPiP4k/database-status-dashboard"
-    subscription_dashboard = "http://${var.instance_public_ip}:3000/d/UjCh-Ya4k/subscription-status-dashboard"
-    proxy_dashboard       = "http://${var.instance_public_ip}:3000/d/edq5t67w5il1cb/proxy-threads"
+    grafana_home = "http://${var.instance_public_ip}:3000"
+    note = "Access all imported Redis Cloud operational dashboards from the Grafana home page"
   }
 }
 
@@ -38,10 +37,16 @@ output "monitoring_info" {
     username = "admin"
     password = "admin"
     dashboards = [
-      "Database Status Dashboard - Redis Cloud database performance metrics",
-      "Subscription Status Dashboard - Redis Cloud subscription and cluster metrics", 
-      "Proxy Threads Dashboard - Redis Cloud proxy performance and connection metrics"
+      "Active-Active Dashboard - Redis Cloud Active-Active replication metrics",
+      "Cluster Dashboard - Redis Cloud cluster-level performance and health metrics",
+      "Database Dashboard - Redis Cloud database performance and operations metrics",
+      "Latency Dashboard - Redis Cloud latency and response time metrics",
+      "Node Dashboard - Redis Cloud node-level resource and performance metrics",
+      "QPS Dashboard - Redis Cloud queries per second and throughput metrics",
+      "Shard Dashboard - Redis Cloud shard-level performance and distribution metrics"
     ]
+    source = "Official Redis Field Engineering operational dashboards"
+    documentation = "https://github.com/redis-field-engineering/redis-enterprise-observability"
   }
   sensitive = true
 }

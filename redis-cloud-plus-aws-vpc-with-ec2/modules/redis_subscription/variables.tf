@@ -182,3 +182,25 @@ variable "maintenance_days" {
     error_message = "Maintenance days must be valid day names (Monday, Tuesday, etc.)."
   }
 }
+
+# =============================================================================
+# ADVANCED SUBSCRIPTION CONFIGURATION
+# =============================================================================
+
+variable "allowlist_security_group_ids" {
+  description = "Set of security groups that are allowed to access the databases associated with this subscription. Only available when running on your own cloud account (cloud_account_id != 1)"
+  type        = list(string)
+  default     = null
+}
+
+variable "allowlist_cidrs" {
+  description = "Set of CIDR ranges that are allowed to access the databases associated with this subscription. Only available when running on your own cloud account (cloud_account_id != 1)"
+  type        = list(string)
+  default     = null
+}
+
+variable "customer_managed_key_resource_name" {
+  description = "The resource name of the customer managed key as defined by the cloud provider (e.g., projects/PROJECT_ID/locations/LOCATION/keyRings/KEY_RING/cryptoKeys/KEY_NAME)"
+  type        = string
+  default     = null
+}

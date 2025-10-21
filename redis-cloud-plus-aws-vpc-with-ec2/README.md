@@ -52,8 +52,9 @@ This project creates a Redis Cloud deployment with AWS VPC infrastructure and se
 
 4. **Get connection details**:
    ```bash
-   terraform output redis_cloud_connection_info
-   terraform output -raw redis_cloud_cli_command
+   terraform output redis_cloud_connection_info  # Complete connection info
+   terraform output -raw redis_cloud_cli_command # CLI command
+   terraform output grafana_credentials          # Grafana login (if enabled)
    ```
 
 5. **Access monitoring (if enabled)**:
@@ -82,6 +83,35 @@ This project creates a Redis Cloud deployment with AWS VPC infrastructure and se
 - `dataset_size_in_gb`: Expected dataset size (default: 1GB)
 - `modules_enabled`: Redis modules (default: ["RedisJSON", "RediSearch"])
 - `vpc_cidr`: VPC CIDR block (default: 10.0.0.0/16)
+
+### Advanced Configuration
+
+All advanced features are optional and commented out in the "EXTRA OPTIONAL CONFIGURATION" section of `terraform.tfvars`. Uncomment and configure as needed:
+
+**Subscription Advanced Settings:**
+- **Network Allowlist**: Restrict access by security groups or CIDRs (only when using your own cloud account)
+- **Customer Managed Keys**: Use your own encryption keys for data protection
+
+**Database Advanced Settings:**
+- **Protocol**: Choose Redis or Memcached protocol
+- **OSS Cluster API**: Enable Redis OSS Cluster API compatibility
+- **RESP Version**: Select RESP2 or RESP3 protocol version
+- **TLS/SSL**: Enable encryption with custom certificates
+- **Data Eviction**: Configure memory eviction policies (LRU, LFU, etc.)
+- **Remote Backup**: Automated backups to S3, GCS, or Azure Blob Storage
+- **Custom Port**: Specify database port (10000-19999)
+- **Source IP Filtering**: Restrict database access by IP address or CIDR
+- **Active-Passive Replication**: Configure replica_of for replication
+- **Custom Password**: Set your own database password
+- **Hashing Policy**: Custom sharding rules for multi-shard databases
+
+**How Optional Variables Work:**
+All advanced configuration variables use `default = null`. When not specified in `terraform.tfvars`:
+- Terraform omits the argument from the Redis Cloud API call
+- Redis Cloud provider applies its own sensible defaults
+- No need to specify values unless you want non-default behavior
+
+See `terraform.tfvars.example` for complete examples and valid values for each option.
 
 ### Testing & Monitoring Variables
 
@@ -262,19 +292,25 @@ aws ec2 describe-route-tables --filters "Name=vpc-id,Values=VPC_ID"
 ### Observability Stack (Optional)
 When `enable_observability = true` is set, the deployment includes:
 
-- **Prometheus**: Scrapes Redis Cloud native metrics endpoint (port 8070)
+- **Prometheus**: Scrapes Redis Cloud v2 metrics endpoint (port 8070)
   - Access: `http://<ec2-public-ip>:9090`
   - Targets: Redis Cloud private endpoint with TLS verification disabled
-  
-- **Grafana**: Pre-configured with Redis Cloud dashboards
+
+- **Grafana**: Pre-configured with `redis-cloud` datasource and operational dashboards
   - Access: `http://<ec2-public-ip>:3000`
   - **Login**: Username: `admin`, Password: `admin`
-  - **Dashboards Available:**
-    - Database Status Dashboard - Redis database performance metrics
-    - Subscription Status Dashboard - Redis subscription and cluster metrics  
-    - Proxy Threads Dashboard - Redis proxy performance and connections
+  - **Dashboards Available** (7 official operational dashboards):
+    - Active-Active Dashboard - Replication metrics for geo-distributed databases
+    - Cluster Dashboard - Cluster-level performance and health metrics
+    - Database Dashboard - Database operations and performance metrics
+    - Latency Dashboard - Request latency analysis (p50, p99, p99.9)
+    - Node Dashboard - Node-level resource utilization
+    - QPS Dashboard - Queries per second and throughput
+    - Shard Dashboard - Shard-level performance and distribution
+  - **Source**: Official Redis Field Engineering observability repository
 
 - **Dashboard URLs**: Available via terraform output `dashboard_urls`
+- **Documentation**: See `modules/observability/README.md` for configuration details
 
 ### CloudWatch (AWS)
 - VPC Flow Logs for network monitoring

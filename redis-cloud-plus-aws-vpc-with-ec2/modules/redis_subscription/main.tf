@@ -16,7 +16,23 @@ resource "rediscloud_subscription" "redis" {
   payment_method    = var.payment_method
   payment_method_id = var.payment_method == "credit-card" ? data.rediscloud_payment_method.card[0].id : null
   memory_storage    = var.memory_storage
-  redis_version     = var.redis_version
+
+  # Allowlist configuration (only when using your own cloud account)
+  dynamic "allowlist" {
+    for_each = var.allowlist_security_group_ids != null || var.allowlist_cidrs != null ? [1] : []
+    content {
+      security_group_ids = var.allowlist_security_group_ids
+      cidrs              = var.allowlist_cidrs
+    }
+  }
+
+  # Customer managed key resource
+  dynamic "customer_managed_key" {
+    for_each = var.customer_managed_key_resource_name != null ? [1] : []
+    content {
+      resource_name = var.customer_managed_key_resource_name
+    }
+  }
 
   cloud_provider {
     provider         = var.cloud_provider

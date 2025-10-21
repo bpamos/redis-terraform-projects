@@ -4,7 +4,7 @@ terraform {
   required_providers {
     rediscloud = {
       source  = "RedisLabs/rediscloud"
-      version = "~> 2.1.4"
+      version = "~> 2.4.1"
     }
     aws = {
       source  = "hashicorp/aws"
