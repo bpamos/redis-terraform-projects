@@ -33,7 +33,7 @@ provider "aws" {
 
 # Get payment method for billing
 data "rediscloud_payment_method" "card" {
-  card_type         = "Visa"
+  card_type         = "Mastercard"
   last_four_numbers = var.credit_card_last_four
 }
 

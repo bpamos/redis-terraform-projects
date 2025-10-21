@@ -7,9 +7,9 @@ This repository contains a collection of standalone Terraform projects for deplo
 ```
 redis-terraform-projects/
 ├── README.md                           # This file
-├── redis-cloud-simple/                 # ⭐ SIMPLE: Redis Cloud + VPC (no modules, 4 files)
 │
 ├── redis-cloud/                        # Redis Cloud Deployments
+│   ├── redis-cloud-simple/             # Redis Cloud + VPC (no modules, basic, hardcoded)
 │   ├── redis-cloud-basic/              # Basic Redis Cloud deployment
 │   ├── redis-cloud-migration-demo/     # Complete migration workflow with cutover UI
 │   ├── redis-cloud-plus-aws-vpc-peering/         # Redis Cloud VPC peering
@@ -29,7 +29,11 @@ redis-terraform-projects/
 
 ## Projects Overview
 
-### ⭐ redis-cloud-simple
+## Redis Cloud Projects
+
+### redis-cloud-simple
+**Location**: `redis-cloud/redis-cloud-simple/`
+
 **The Simplest Redis Cloud Setup** - Learn Redis Cloud + AWS in minutes:
 - **4 files total** - No modules, everything in plain sight
 - **Hardcoded values** - Sensible defaults, just add credentials
@@ -38,8 +42,6 @@ redis-terraform-projects/
 - **Deploy time**: <5 minutes
 - Redis Cloud 1GB database + AWS VPC + VPC peering
 - See full version: `redis-cloud/redis-cloud-plus-aws-vpc-with-ec2`
-
-## Redis Cloud Projects
 
 ### 🚀 redis-cloud-migration-demo
 **Location**: `redis-cloud/redis-cloud-migration-demo/`
@@ -315,7 +317,7 @@ Each project follows consistent patterns:
 
 | Project | Location | Type | Key Features |
 |---------|----------|------|--------------|
-| **redis-cloud-simple** ⭐ | `./ (root)` | **Learning** | **Simplest setup - 4 files, no modules, <300 lines** |
+| **redis-cloud-simple** ⭐ | `redis-cloud/` | **Learning** | **Simplest setup - 4 files, no modules, <300 lines** |
 | redis-cloud-migration-demo | `redis-cloud/` | Migration | Complete migration workflow with cutover UI |
 | redis-cloud-plus-aws-vpc-with-ec2 | `redis-cloud/` | Cloud | Redis Cloud with VPC peering and EC2 |
 | redis-cloud-plus-aws-vpc-peering | `redis-cloud/` | Cloud | Simplified VPC peering setup |
