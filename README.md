@@ -317,7 +317,7 @@ Each project follows consistent patterns:
 
 | Project | Location | Type | Key Features |
 |---------|----------|------|--------------|
-| **redis-cloud-simple** ⭐ | `redis-cloud/` | **Learning** | **Simplest setup - 4 files, no modules, <300 lines** |
+| redis-cloud-simple | `redis-cloud/` | Learning | Simplest setup - 4 files, no modules, <300 lines |
 | redis-cloud-migration-demo | `redis-cloud/` | Migration | Complete migration workflow with cutover UI |
 | redis-cloud-plus-aws-vpc-with-ec2 | `redis-cloud/` | Cloud | Redis Cloud with VPC peering and EC2 |
 | redis-cloud-plus-aws-vpc-peering | `redis-cloud/` | Cloud | Simplified VPC peering setup |
