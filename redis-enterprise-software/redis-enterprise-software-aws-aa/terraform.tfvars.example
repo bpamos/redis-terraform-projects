@@ -1,0 +1,187 @@
+# =============================================================================
+# REDIS ENTERPRISE ACTIVE-ACTIVE MULTI-REGION CONFIGURATION EXAMPLE
+# =============================================================================
+# Copy this file to terraform.tfvars and update with your values
+# cp terraform.tfvars.example terraform.tfvars
+# =============================================================================
+
+# =============================================================================
+# PROJECT CONFIGURATION
+# =============================================================================
+
+user_prefix  = "yourname"      # Your unique identifier (lowercase, max 10 chars)
+cluster_name = "redis-aa"      # Cluster name suffix
+owner        = "Your Name"     # Owner tag for resources
+project      = "redis-enterprise-active-active"  # Project name
+
+# =============================================================================
+# MULTI-REGION CONFIGURATION
+# =============================================================================
+# Define each region where you want to deploy a Redis Enterprise cluster
+# Minimum 2 regions required for Active-Active
+
+regions = {
+  "us-west-2" = {
+    vpc_cidr     = "10.0.0.0/16"
+    key_name     = "your-key-us-west-2"       # EC2 key pair name in us-west-2
+    ssh_key_path = "~/path/to/us-west-2.pem"  # Local path to private key
+
+    # Optional: specify availability zones (will auto-select if empty)
+    availability_zones = []
+
+    # Optional: customize subnet CIDRs (these are defaults)
+    public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+    private_subnet_cidrs = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
+  }
+
+  "us-east-1" = {
+    vpc_cidr     = "10.1.0.0/16"  # Different CIDR per region!
+    key_name     = "your-key-us-east-1"
+    ssh_key_path = "~/path/to/us-east-1.pem"
+
+    availability_zones   = []
+    public_subnet_cidrs  = ["10.1.1.0/24", "10.1.2.0/24", "10.1.3.0/24"]
+    private_subnet_cidrs = ["10.1.4.0/24", "10.1.5.0/24", "10.1.6.0/24"]
+  }
+
+  # Easy to add more regions for additional geo-distribution!
+  # "eu-west-1" = {
+  #   vpc_cidr     = "10.2.0.0/16"
+  #   key_name     = "your-key-eu-west-1"
+  #   ssh_key_path = "~/path/to/eu-west-1.pem"
+  #   availability_zones   = []
+  #   public_subnet_cidrs  = ["10.2.1.0/24", "10.2.2.0/24", "10.2.3.0/24"]
+  #   private_subnet_cidrs = ["10.2.4.0/24", "10.2.5.0/24", "10.2.6.0/24"]
+  # }
+}
+
+# CIDR blocks allowed to SSH into instances (applies to all regions)
+# SECURITY: Restrict this to your IP address or corporate VPN CIDR
+allow_ssh_from = ["0.0.0.0/0"]  # Change to your IP: ["1.2.3.4/32"]
+
+# =============================================================================
+# DNS CONFIGURATION
+# =============================================================================
+
+dns_hosted_zone_id = "Z1234567890ABC"  # Your Route53 hosted zone ID
+create_dns_records = true
+
+# Cluster FQDNs will be created as:
+# - us-west-2.yourname-redis-aa.yourdomain.com
+# - us-east-1.yourname-redis-aa.yourdomain.com
+
+# =============================================================================
+# REDIS ENTERPRISE CONFIGURATION
+# =============================================================================
+
+# Platform (Ubuntu 22.04 or RHEL 9)
+platform = "ubuntu"  # or "rhel"
+
+# Cluster sizing per region
+node_count_per_region = 3          # 3-node cluster in each region (minimum for HA)
+instance_type         = "t3.xlarge"  # 4 vCPU, 16GB RAM (good for testing)
+#instance_type        = "m5.2xlarge" # 8 vCPU, 32GB RAM (production)
+
+# Redis Enterprise Software download URL
+# Get the latest from: https://redis.io/downloads/
+re_download_url = "https://s3.amazonaws.com/redis-enterprise-software-downloads/7.4.2/redislabs-7.4.2-104-jammy-amd64.tar"
+
+# Cluster credentials (same for all regions)
+cluster_username = "admin@admin.com"
+cluster_password = "YourSecurePassword123"  # Alphanumeric only, no special chars
+
+# Cluster features
+rack_awareness = true   # Enable rack/zone awareness for HA
+flash_enabled  = false  # Redis on Flash (requires NVMe instances)
+
+# =============================================================================
+# NETWORKING CONFIGURATION
+# =============================================================================
+
+# Public IP Configuration
+# Set to true to assign regular public IPs to Redis Enterprise nodes
+# Set to false for private IPs only (requires VPN/Direct Connect for access)
+# Note: When use_elastic_ips = true, this is automatically set to false
+associate_public_ip_address = true   # Default: true
+
+# Elastic IP Configuration (RECOMMENDED FOR ACTIVE-ACTIVE)
+# Set to true (default) to use Elastic IPs - provides static IPs that persist across stop/start
+# Recommended for Active-Active deployments to ensure stable cross-region communication
+use_elastic_ips = true  # Default: true (recommended for AA)
+
+# Examples:
+# - Elastic IPs (default):   associate_public_ip_address = true,  use_elastic_ips = true
+# - Regular Public IPs:      associate_public_ip_address = true,  use_elastic_ips = false
+# - Private IPs only:        associate_public_ip_address = false, use_elastic_ips = false
+
+# =============================================================================
+# STORAGE CONFIGURATION
+# =============================================================================
+
+node_root_size         = 50   # Root volume size in GB
+data_volume_size       = 64   # Data volume (RAM x 4 for testing)
+data_volume_type       = "gp3"
+persistent_volume_size = 64   # Persistent storage
+persistent_volume_type = "gp3"
+ebs_encryption_enabled = true
+
+# =============================================================================
+# ACTIVE-ACTIVE (CRDB) DATABASE CONFIGURATION
+# =============================================================================
+
+# Automatically create CRDB database after cluster deployment
+create_crdb_database = true
+verify_crdb_creation = true
+
+# CRDB configuration
+crdb_database_name = "active-active-db"
+crdb_port          = 12000  # Cannot change after creation
+crdb_memory_size   = 1073741824  # 1GB in bytes
+
+# CRDB features (cannot change after creation)
+crdb_enable_replication       = true   # Recommended for HA
+crdb_enable_sharding          = false  # Single shard
+crdb_shards_count             = 1      # If sharding enabled
+crdb_enable_causal_consistency = true
+crdb_aof_policy               = "appendfsync-every-sec"  # or "appendfsync-always"
+
+# =============================================================================
+# OPTIONAL: PER-REGION SAMPLE DATABASES
+# =============================================================================
+# These are separate from the CRDB database (typically disabled for AA)
+
+create_sample_database = false  # Set to true to create per-region databases
+sample_db_name         = "demo"
+sample_db_port         = 11000
+sample_db_memory       = 100  # MB
+
+# =============================================================================
+# ADDITIONAL TAGS
+# =============================================================================
+
+tags = {
+  Environment = "production"
+  CostCenter  = "engineering"
+  ManagedBy   = "terraform"
+}
+
+# =============================================================================
+# DEPLOYMENT NOTES
+# =============================================================================
+#
+# 1. Ensure EC2 key pairs exist in ALL regions before running terraform apply
+# 2. VPC CIDRs MUST NOT overlap across regions
+# 3. Estimated deployment time: 15-20 minutes
+# 4. Total resources created:
+#    - 2 VPCs (1 per region)
+#    - 6 EC2 instances (3 per region)
+#    - 1 VPC peering connection
+#    - 1 Active-Active CRDB database
+# 5. After deployment, access cluster UIs at:
+#    - https://us-west-2.yourname-redis-aa.domain.com:8443
+#    - https://us-east-1.yourname-redis-aa.domain.com:8443
+# 6. Connect to CRDB from any region:
+#    redis-cli -h redis-12000.us-west-2.yourname-redis-aa.domain.com -p 12000
+#    redis-cli -h redis-12000.us-east-1.yourname-redis-aa.domain.com -p 12000
+#
+# =============================================================================
