@@ -1,0 +1,250 @@
+#==============================================================================
+# REDIS ENTERPRISE SOFTWARE ON AWS EKS - CONFIGURATION
+# Copy this file to terraform.tfvars and update these values before deployment
+#==============================================================================
+
+#==============================================================================
+# ⚠️  REQUIRED VALUES - MUST BE CHANGED BEFORE DEPLOYMENT
+#==============================================================================
+
+# Project identification (REQUIRED)
+user_prefix  = "your-name"      # Your unique identifier (e.g., "jsmith")
+cluster_name = "redis-ent-eks"  # Redis Enterprise cluster name
+owner        = "your-name"      # Your name/team for resource tagging
+
+# AWS Configuration (REQUIRED)
+aws_region = "us-west-2" # Your preferred AWS region
+
+# Redis Enterprise Cluster Credentials (REQUIRED)
+# IMPORTANT: Use alphanumeric passwords only (letters and numbers, no special characters)
+redis_cluster_username = "admin@admin.com" # Admin email for Redis Enterprise
+redis_cluster_password = "YourSecurePassword123" # Alphanumeric only
+
+#==============================================================================
+# EKS CLUSTER CONFIGURATION (Optional - Good defaults provided)
+#==============================================================================
+
+# Kubernetes Version
+kubernetes_version = "1.28" # Supported: 1.23 - 1.33
+
+# Cluster Endpoint Access
+cluster_endpoint_public_access  = true  # Allow public access to cluster API
+cluster_endpoint_private_access = true  # Allow private access from VPC
+
+# Environment
+environment = "dev" # dev, staging, or prod
+
+#==============================================================================
+# EKS NODE GROUP CONFIGURATION (Optional - Good defaults provided)
+#==============================================================================
+
+# Instance Configuration
+node_instance_types = ["t3.xlarge"] # EC2 instance types for worker nodes (16GB RAM)
+node_disk_size      = 100           # Disk size in GB for each worker node
+
+# Node Group Scaling
+node_desired_size = 3 # Desired number of worker nodes
+node_min_size     = 3 # Minimum number (must be >= 3 for Redis Enterprise HA)
+node_max_size     = 6 # Maximum number for auto-scaling
+
+#==============================================================================
+# NETWORK CONFIGURATION (Optional - Good defaults provided)
+#==============================================================================
+
+# Availability Zones (leave empty for automatic selection)
+availability_zones = [] # Auto-selects 3 AZs in your region
+# availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"] # Or specify manually
+
+# VPC and Subnets (will be created for you)
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+private_subnet_cidrs = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
+
+#==============================================================================
+# REDIS ENTERPRISE CONFIGURATION (Optional - Good defaults provided)
+#==============================================================================
+
+# Kubernetes Namespace
+redis_enterprise_namespace = "redis-enterprise"
+
+# Operator Version (bundle version)
+# Visit: https://github.com/RedisLabs/redis-enterprise-k8s-docs/releases
+redis_operator_version = "v8.0.2-2" # Latest: Nov 2024, supports Redis 8.0.2
+
+# Cluster Configuration
+redis_cluster_nodes = 3 # Number of Redis Enterprise nodes (minimum 3 for HA)
+
+# Resource Allocation per Redis Enterprise Node
+redis_cluster_memory = "4Gi" # Memory limit per node (4Gi = 4GB)
+
+# Storage Configuration
+redis_cluster_storage_size  = "50Gi" # Persistent storage per node
+redis_cluster_storage_class = "gp3"  # EBS GP3 storage class
+
+# Service Type Configuration (default: internal access only)
+redis_ui_service_type       = "ClusterIP"   # ClusterIP (internal) or LoadBalancer (external)
+redis_database_service_type = "ClusterIP"   # Default service type for databases
+
+# License (optional)
+# redis_license_secret_name = "redis-enterprise-license" # Kubernetes secret name with license
+
+#==============================================================================
+# EXTERNAL ACCESS VIA INGRESS (Optional - Disabled by default)
+#==============================================================================
+
+# Enable ingress for external access to cluster and databases
+redis_enable_ingress = false
+
+# If redis_enable_ingress = true, configure these:
+# redis_api_fqdn_url    = "api-redis.example.com"        # FQDN for Redis Enterprise API
+# redis_db_fqdn_suffix  = "-db-redis.example.com"        # FQDN suffix for databases
+# redis_ingress_method  = "ingress"                      # "ingress" or "openShiftRoute"
+# redis_ingress_annotations = {
+#   "nginx.ingress.kubernetes.io/ssl-passthrough" = "true"
+# }
+
+#==============================================================================
+# SAMPLE DATABASE CONFIGURATION (Optional - Good defaults provided)
+#==============================================================================
+
+# Automatic Database Creation
+create_sample_database = true     # Create a demo database for testing
+sample_db_name         = "demo"   # Database name
+sample_db_port         = 12000    # Database port (10000-19999)
+sample_db_memory       = "100MB"  # Memory size (100MB, 1GB, etc.)
+sample_db_replication  = true     # Enable HA replication (default: enabled)
+
+# Service Type for Sample Database
+sample_db_service_type = "ClusterIP" # ClusterIP (internal) or LoadBalancer (external)
+# sample_db_service_port = 0         # Custom service port (0 = use database_port)
+
+# Advanced Database Options
+sample_db_shard_count = 1          # Number of shards (1 = single shard, default)
+# sample_db_redis_version = "7.2"  # Redis OSS version (empty = cluster default)
+
+# Redis Modules (optional)
+# sample_db_modules = [
+#   {
+#     name    = "RedisJSON"
+#     version = "2.6.6"
+#   },
+#   {
+#     name    = "RedisSearch"
+#     version = "2.8.4"
+#   }
+# ]
+
+#==============================================================================
+# RESOURCE TAGGING (Optional - Customize as needed)
+#==============================================================================
+
+tags = {
+  environment = "demo"
+  purpose     = "redis-enterprise-eks-testing"
+  managed_by  = "terraform"
+}
+
+#==============================================================================
+# 🔗 HELPFUL INFORMATION
+#==============================================================================
+#
+# After deployment, access your cluster with:
+#
+# 1. Configure kubectl:
+#    aws eks update-kubeconfig --region us-west-2 --name your-name-redis-ent-eks
+#
+# 2. Verify cluster status:
+#    kubectl get rec -n redis-enterprise
+#    kubectl get redb -n redis-enterprise
+#    kubectl get svc -n redis-enterprise
+#
+# 3. Access Redis Enterprise UI:
+#    # If using ClusterIP (default):
+#    kubectl port-forward -n redis-enterprise svc/redis-ent-eks-ui 8443:8443
+#    # Then access: https://localhost:8443
+#
+#    # If using LoadBalancer:
+#    kubectl get svc redis-ent-eks-ui -n redis-enterprise
+#    # Access via external LoadBalancer IP
+#
+# 4. Access sample database:
+#    # If using ClusterIP (default):
+#    kubectl port-forward -n redis-enterprise svc/demo 12000:12000
+#    redis-cli -h localhost -p 12000
+#
+#    # If using LoadBalancer:
+#    kubectl get svc demo -n redis-enterprise
+#    # Connect via external LoadBalancer IP
+#
+# 5. Or from inside the cluster:
+#    # Service FQDN: demo.redis-enterprise.svc.cluster.local:12000
+#
+# NOTE: Default is ClusterIP (internal access only). Set service types to
+# LoadBalancer for external access, or enable ingress for DNS-based routing.
+#
+#==============================================================================
+# 🚀 DEPLOYMENT STEPS
+#==============================================================================
+#
+# 1. Copy this file:
+#    cp terraform.tfvars.example terraform.tfvars
+#
+# 2. Edit terraform.tfvars with your values (especially credentials!)
+#
+# 3. Deploy:
+#    terraform init
+#    terraform plan
+#    terraform apply
+#
+# 4. Wait ~10-15 minutes for complete deployment
+#
+# 5. Configure kubectl and access your cluster!
+#
+#==============================================================================
+# 🔒 SECURITY REMINDERS
+#==============================================================================
+#
+# ✅ DO:
+# • Use strong, unique passwords (alphanumeric only for Redis Enterprise)
+# • Never commit terraform.tfvars to git (it's gitignored by default)
+# • Use AWS Systems Manager Parameter Store for secrets in production
+# • Enable EKS cluster logging for audit trails
+# • Review and restrict security group rules for production
+#
+# ⚠️  PRODUCTION:
+# • Consider private subnets for worker nodes
+# • Enable TLS for Redis databases
+# • Configure backup and disaster recovery
+# • Set up monitoring with Prometheus/Grafana
+# • Implement network policies
+# • Use IAM roles for service accounts (IRSA)
+#
+#==============================================================================
+# 📊 RESOURCE REQUIREMENTS
+#==============================================================================
+#
+# Minimum cluster requirements:
+# • 3 worker nodes (for Redis Enterprise HA)
+# • t3.xlarge instances (4 vCPU, 16GB RAM each)
+# • 100GB EBS storage per node
+# • Total: ~48GB RAM, 12 vCPUs, 300GB storage
+#
+# For production:
+# • Consider r6i.xlarge or larger (memory-optimized)
+# • Increase storage based on data size
+# • Add more nodes for higher capacity
+#
+#==============================================================================
+# 💰 ESTIMATED COSTS
+#==============================================================================
+#
+# Approximate monthly costs (us-west-2):
+# • EKS control plane: ~$73/month
+# • 3x t3.xlarge nodes: ~$300/month
+# • EBS gp3 storage (300GB): ~$25/month
+# • Data transfer: Variable
+# • Total: ~$400-500/month for dev/test
+#
+# Remember to run `terraform destroy` when done testing!
+#
+#==============================================================================
