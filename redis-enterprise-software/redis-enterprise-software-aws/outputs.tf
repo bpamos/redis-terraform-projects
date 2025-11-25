@@ -179,3 +179,17 @@ output "cluster_credentials" {
   }
   sensitive = true
 }
+
+# =============================================================================
+# TEST NODE INFORMATION
+# =============================================================================
+
+output "test_node_info" {
+  description = "Test node information"
+  value = var.enable_test_node ? {
+    instance_id = module.test_node[0].instance_id
+    public_ip   = module.test_node[0].public_ip
+    private_ip  = module.test_node[0].private_ip
+    ssh_command = module.test_node[0].ssh_command
+  } : null
+}

@@ -41,8 +41,8 @@ variable "node_count" {
   description = "Number of Redis Enterprise nodes"
   type        = number
   validation {
-    condition     = var.node_count >= 3 && var.node_count <= 9 && var.node_count % 2 == 1
-    error_message = "Node count must be an odd number between 3 and 9."
+    condition     = var.node_count >= 3 && var.node_count <= 9
+    error_message = "Node count must be between 3 and 9."
   }
 }
 

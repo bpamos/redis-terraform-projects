@@ -342,6 +342,22 @@ variable "sample_db_memory" {
 }
 
 # =============================================================================
+# TEST NODE CONFIGURATION
+# =============================================================================
+
+variable "enable_test_node" {
+  description = "Create a test node for Redis testing and benchmarking"
+  type        = bool
+  default     = true
+}
+
+variable "test_node_instance_type" {
+  description = "Instance type for the test node"
+  type        = string
+  default     = "t3.small"
+}
+
+# =============================================================================
 # RESOURCE TAGGING
 # =============================================================================
 

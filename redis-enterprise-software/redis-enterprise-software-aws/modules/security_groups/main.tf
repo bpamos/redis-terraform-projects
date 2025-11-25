@@ -192,3 +192,42 @@ resource "aws_security_group" "redis_enterprise" {
     var.tags
   )
 }
+
+# =============================================================================
+# TEST NODE SECURITY GROUP
+# =============================================================================
+
+# Security group for test/client node
+resource "aws_security_group" "test_node" {
+  name_prefix = "${var.name_prefix}-test-node-sg"
+  description = "Security group for Redis test/client node"
+  vpc_id      = var.vpc_id
+
+  # SSH access
+  ingress {
+    description = "SSH access"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = var.allow_ssh_from
+  }
+
+  # All outbound traffic
+  egress {
+    description = "All outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(
+    {
+      Name    = "${var.name_prefix}-test-node-sg"
+      Owner   = var.owner
+      Project = var.project
+      Type    = "Test-Node-SecurityGroup"
+    },
+    var.tags
+  )
+}

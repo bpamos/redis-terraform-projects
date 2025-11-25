@@ -210,3 +210,27 @@ module "database_management" {
   # Dependencies - wait for cluster bootstrap to complete
   cluster_verification_id = module.cluster_bootstrap.cluster_verification
 }
+
+# =============================================================================
+# TEST/CLIENT NODE
+# =============================================================================
+
+module "test_node" {
+  count  = var.enable_test_node ? 1 : 0
+  source = "./modules/test_node"
+
+  name_prefix          = local.name_prefix
+  instance_type        = var.test_node_instance_type
+  subnet_id            = module.vpc.public_subnet_ids[0]
+  security_group_id    = module.security_group.test_node_sg_id
+  key_name             = var.key_name
+  ssh_private_key_path = var.ssh_private_key_path
+
+  # Redis connection info (for testing)
+  redis_endpoint = var.create_sample_database ? "redis-${var.sample_db_port}-internal.${local.name_prefix}.${data.aws_route53_zone.main.name}:${var.sample_db_port}" : ""
+  redis_password = ""
+
+  owner   = var.owner
+  project = var.project
+  tags    = var.tags
+}
