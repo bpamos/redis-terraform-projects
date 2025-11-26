@@ -69,13 +69,16 @@ redis_enterprise_namespace = "redis-enterprise"
 
 # Operator Version (bundle version)
 # Visit: https://github.com/RedisLabs/redis-enterprise-k8s-docs/releases
-redis_operator_version = "v8.0.2-2" # Latest: Nov 2024, supports Redis 8.0.2
+redis_operator_version = "v7.4.6-2" # Stable version with Redis 7.4.6
 
 # Cluster Configuration
 redis_cluster_nodes = 3 # Number of Redis Enterprise nodes (minimum 3 for HA)
 
 # Resource Allocation per Redis Enterprise Node
 redis_cluster_memory = "4Gi" # Memory limit per node (4Gi = 4GB)
+
+# Redis Enterprise Image Version (must match operator version)
+redis_enterprise_version_tag = "7.4.6-22" # Image tag for Redis Enterprise 7.4.6
 
 # Storage Configuration
 redis_cluster_storage_size  = "50Gi" # Persistent storage per node
@@ -113,6 +116,7 @@ sample_db_name         = "demo"   # Database name
 sample_db_port         = 12000    # Database port (10000-19999)
 sample_db_memory       = "100MB"  # Memory size (100MB, 1GB, etc.)
 sample_db_replication  = true     # Enable HA replication (default: enabled)
+sample_db_password     = "admin"  # Database password (alphanumeric only)
 
 # Service Type for Sample Database
 sample_db_service_type = "ClusterIP" # ClusterIP (internal) or LoadBalancer (external)
@@ -170,7 +174,7 @@ tags = {
 # 4. Access sample database:
 #    # If using ClusterIP (default):
 #    kubectl port-forward -n redis-enterprise svc/demo 12000:12000
-#    redis-cli -h localhost -p 12000
+#    redis-cli -h localhost -p 12000 -a admin
 #
 #    # If using LoadBalancer:
 #    kubectl get svc demo -n redis-enterprise

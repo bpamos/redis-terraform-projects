@@ -5,6 +5,9 @@
 !terraform.tfvars.example
 .terraform/
 .terraform.lock.hcl
+*.tfplan
+tfplan
+tfplan.*
 
 # Crash logs
 crash.log
@@ -33,3 +36,8 @@ secrets/
 *.pem
 *.key
 *.crt
+
+# Test/debug files
+rec.yaml
+redb.yaml
+test*.yaml
