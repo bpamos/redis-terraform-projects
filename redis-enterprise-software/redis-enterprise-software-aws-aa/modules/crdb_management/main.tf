@@ -31,18 +31,18 @@ locals {
 
   # CRDB configuration JSON (matching Redis Enterprise API structure)
   crdb_config = {
-    name               = var.crdb_name
-    instances          = local.crdb_instances
-    default_db_config  = {
-      name             = var.crdb_name
-      memory_size      = var.crdb_memory_size
-      port             = var.crdb_port
-      bigstore         = false
-      replication      = var.enable_replication
-      aof_policy       = var.aof_policy
-      snapshot_policy  = []
-      sharding         = var.enable_sharding
-      shards_count     = var.shards_count
+    name      = var.crdb_name
+    instances = local.crdb_instances
+    default_db_config = {
+      name            = var.crdb_name
+      memory_size     = var.crdb_memory_size
+      port            = var.crdb_port
+      bigstore        = false
+      replication     = var.enable_replication
+      aof_policy      = var.aof_policy
+      snapshot_policy = []
+      sharding        = var.enable_sharding
+      shards_count    = var.shards_count
     }
   }
 }

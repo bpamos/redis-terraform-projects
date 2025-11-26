@@ -26,6 +26,54 @@ locals {
       if peer_region != region
     ]
   }
+
+  # Shared configuration for all region modules (DRY principle)
+  region_module_shared_config = {
+    # Global configuration
+    user_prefix  = var.user_prefix
+    cluster_name = var.cluster_name
+    owner        = var.owner
+    project      = var.project
+    tags         = var.tags
+
+    # DNS configuration (regional FQDNs)
+    dns_hosted_zone_id = var.dns_hosted_zone_id
+    hosted_zone_name   = data.aws_route53_zone.main.name
+    create_dns_records = var.create_dns_records
+
+    # Redis Enterprise configuration
+    platform         = var.platform
+    node_count       = var.node_count_per_region
+    instance_type    = var.instance_type
+    re_download_url  = var.re_download_url
+    cluster_username = var.cluster_username
+    cluster_password = var.cluster_password
+    rack_awareness   = var.rack_awareness
+    flash_enabled    = var.flash_enabled
+
+    # Database configuration
+    create_sample_database = var.create_sample_database
+    sample_db_name         = var.sample_db_name
+    sample_db_port         = var.sample_db_port
+    sample_db_memory       = var.sample_db_memory
+
+    # Storage configuration
+    node_root_size         = var.node_root_size
+    data_volume_size       = var.data_volume_size
+    data_volume_type       = var.data_volume_type
+    persistent_volume_size = var.persistent_volume_size
+    persistent_volume_type = var.persistent_volume_type
+    ebs_encryption_enabled = var.ebs_encryption_enabled
+
+    # Network configuration
+    associate_public_ip_address = var.associate_public_ip_address
+    use_elastic_ips             = var.use_elastic_ips
+    allow_ssh_from              = var.allow_ssh_from
+
+    # Test node configuration
+    enable_test_node        = var.enable_test_nodes
+    test_node_instance_type = var.test_node_instance_type
+  }
 }
 
 # Configure AWS providers for each region
@@ -40,7 +88,11 @@ provider "aws" {
 }
 
 # =============================================================================
-# REGION 1 CLUSTER
+# REDIS ENTERPRISE CLUSTERS (Multi-Region)
+# =============================================================================
+# Note: Terraform doesn't support dynamic provider assignment in for_each loops,
+# so we maintain separate module blocks per region but use shared configuration
+# from locals to maintain DRY principles.
 # =============================================================================
 
 module "redis_cluster_region1" {
@@ -51,61 +103,43 @@ module "redis_cluster_region1" {
   }
 
   # Region-specific configuration
-  region        = local.region_list[0]
-  region_config = var.regions[local.region_list[0]]
-
-  # Global configuration
-  user_prefix          = var.user_prefix
-  cluster_name         = var.cluster_name
-  owner                = var.owner
-  project              = var.project
-  tags                 = var.tags
-
-  # DNS configuration (regional FQDNs)
-  dns_hosted_zone_id   = var.dns_hosted_zone_id
-  hosted_zone_name     = data.aws_route53_zone.main.name
-  create_dns_records   = var.create_dns_records
-
-  # Redis Enterprise configuration
-  platform             = var.platform
-  node_count           = var.node_count_per_region
-  instance_type        = var.instance_type
-  re_download_url      = var.re_download_url
-  cluster_username     = var.cluster_username
-  cluster_password     = var.cluster_password
-  rack_awareness       = var.rack_awareness
-  flash_enabled        = var.flash_enabled
-
-  # Database configuration
-  create_sample_database = var.create_sample_database
-  sample_db_name         = var.sample_db_name
-  sample_db_port         = var.sample_db_port
-  sample_db_memory       = var.sample_db_memory
-
-  # Storage configuration
-  node_root_size         = var.node_root_size
-  data_volume_size       = var.data_volume_size
-  data_volume_type       = var.data_volume_type
-  persistent_volume_size = var.persistent_volume_size
-  persistent_volume_type = var.persistent_volume_type
-  ebs_encryption_enabled = var.ebs_encryption_enabled
-
-  # Network configuration
-  associate_public_ip_address = var.associate_public_ip_address
-  use_elastic_ips             = var.use_elastic_ips
-
-  # Cross-region communication
+  region            = local.region_list[0]
+  region_config     = var.regions[local.region_list[0]]
   peer_region_cidrs = local.peer_region_cidrs[local.region_list[0]]
-  allow_ssh_from    = var.allow_ssh_from
 
-  # Test node configuration
-  enable_test_node        = var.enable_test_nodes
-  test_node_instance_type = var.test_node_instance_type
+  # All shared configuration from locals
+  user_prefix                 = local.region_module_shared_config.user_prefix
+  cluster_name                = local.region_module_shared_config.cluster_name
+  owner                       = local.region_module_shared_config.owner
+  project                     = local.region_module_shared_config.project
+  tags                        = local.region_module_shared_config.tags
+  dns_hosted_zone_id          = local.region_module_shared_config.dns_hosted_zone_id
+  hosted_zone_name            = local.region_module_shared_config.hosted_zone_name
+  create_dns_records          = local.region_module_shared_config.create_dns_records
+  platform                    = local.region_module_shared_config.platform
+  node_count                  = local.region_module_shared_config.node_count
+  instance_type               = local.region_module_shared_config.instance_type
+  re_download_url             = local.region_module_shared_config.re_download_url
+  cluster_username            = local.region_module_shared_config.cluster_username
+  cluster_password            = local.region_module_shared_config.cluster_password
+  rack_awareness              = local.region_module_shared_config.rack_awareness
+  flash_enabled               = local.region_module_shared_config.flash_enabled
+  create_sample_database      = local.region_module_shared_config.create_sample_database
+  sample_db_name              = local.region_module_shared_config.sample_db_name
+  sample_db_port              = local.region_module_shared_config.sample_db_port
+  sample_db_memory            = local.region_module_shared_config.sample_db_memory
+  node_root_size              = local.region_module_shared_config.node_root_size
+  data_volume_size            = local.region_module_shared_config.data_volume_size
+  data_volume_type            = local.region_module_shared_config.data_volume_type
+  persistent_volume_size      = local.region_module_shared_config.persistent_volume_size
+  persistent_volume_type      = local.region_module_shared_config.persistent_volume_type
+  ebs_encryption_enabled      = local.region_module_shared_config.ebs_encryption_enabled
+  associate_public_ip_address = local.region_module_shared_config.associate_public_ip_address
+  use_elastic_ips             = local.region_module_shared_config.use_elastic_ips
+  allow_ssh_from              = local.region_module_shared_config.allow_ssh_from
+  enable_test_node            = local.region_module_shared_config.enable_test_node
+  test_node_instance_type     = local.region_module_shared_config.test_node_instance_type
 }
-
-# =============================================================================
-# REGION 2 CLUSTER
-# =============================================================================
 
 module "redis_cluster_region2" {
   count  = length(local.region_list) > 1 ? 1 : 0
@@ -116,56 +150,42 @@ module "redis_cluster_region2" {
   }
 
   # Region-specific configuration
-  region        = local.region_list[1]
-  region_config = var.regions[local.region_list[1]]
-
-  # Global configuration
-  user_prefix          = var.user_prefix
-  cluster_name         = var.cluster_name
-  owner                = var.owner
-  project              = var.project
-  tags                 = var.tags
-
-  # DNS configuration (regional FQDNs)
-  dns_hosted_zone_id   = var.dns_hosted_zone_id
-  hosted_zone_name     = data.aws_route53_zone.main.name
-  create_dns_records   = var.create_dns_records
-
-  # Redis Enterprise configuration
-  platform             = var.platform
-  node_count           = var.node_count_per_region
-  instance_type        = var.instance_type
-  re_download_url      = var.re_download_url
-  cluster_username     = var.cluster_username
-  cluster_password     = var.cluster_password
-  rack_awareness       = var.rack_awareness
-  flash_enabled        = var.flash_enabled
-
-  # Database configuration
-  create_sample_database = var.create_sample_database
-  sample_db_name         = var.sample_db_name
-  sample_db_port         = var.sample_db_port
-  sample_db_memory       = var.sample_db_memory
-
-  # Storage configuration
-  node_root_size         = var.node_root_size
-  data_volume_size       = var.data_volume_size
-  data_volume_type       = var.data_volume_type
-  persistent_volume_size = var.persistent_volume_size
-  persistent_volume_type = var.persistent_volume_type
-  ebs_encryption_enabled = var.ebs_encryption_enabled
-
-  # Network configuration
-  associate_public_ip_address = var.associate_public_ip_address
-  use_elastic_ips             = var.use_elastic_ips
-
-  # Cross-region communication
+  region            = local.region_list[1]
+  region_config     = var.regions[local.region_list[1]]
   peer_region_cidrs = local.peer_region_cidrs[local.region_list[1]]
-  allow_ssh_from    = var.allow_ssh_from
 
-  # Test node configuration
-  enable_test_node        = var.enable_test_nodes
-  test_node_instance_type = var.test_node_instance_type
+  # All shared configuration from locals
+  user_prefix                 = local.region_module_shared_config.user_prefix
+  cluster_name                = local.region_module_shared_config.cluster_name
+  owner                       = local.region_module_shared_config.owner
+  project                     = local.region_module_shared_config.project
+  tags                        = local.region_module_shared_config.tags
+  dns_hosted_zone_id          = local.region_module_shared_config.dns_hosted_zone_id
+  hosted_zone_name            = local.region_module_shared_config.hosted_zone_name
+  create_dns_records          = local.region_module_shared_config.create_dns_records
+  platform                    = local.region_module_shared_config.platform
+  node_count                  = local.region_module_shared_config.node_count
+  instance_type               = local.region_module_shared_config.instance_type
+  re_download_url             = local.region_module_shared_config.re_download_url
+  cluster_username            = local.region_module_shared_config.cluster_username
+  cluster_password            = local.region_module_shared_config.cluster_password
+  rack_awareness              = local.region_module_shared_config.rack_awareness
+  flash_enabled               = local.region_module_shared_config.flash_enabled
+  create_sample_database      = local.region_module_shared_config.create_sample_database
+  sample_db_name              = local.region_module_shared_config.sample_db_name
+  sample_db_port              = local.region_module_shared_config.sample_db_port
+  sample_db_memory            = local.region_module_shared_config.sample_db_memory
+  node_root_size              = local.region_module_shared_config.node_root_size
+  data_volume_size            = local.region_module_shared_config.data_volume_size
+  data_volume_type            = local.region_module_shared_config.data_volume_type
+  persistent_volume_size      = local.region_module_shared_config.persistent_volume_size
+  persistent_volume_type      = local.region_module_shared_config.persistent_volume_type
+  ebs_encryption_enabled      = local.region_module_shared_config.ebs_encryption_enabled
+  associate_public_ip_address = local.region_module_shared_config.associate_public_ip_address
+  use_elastic_ips             = local.region_module_shared_config.use_elastic_ips
+  allow_ssh_from              = local.region_module_shared_config.allow_ssh_from
+  enable_test_node            = local.region_module_shared_config.enable_test_node
+  test_node_instance_type     = local.region_module_shared_config.test_node_instance_type
 }
 
 # =============================================================================
@@ -225,31 +245,31 @@ module "crdb" {
     aws = aws.region1
   }
 
-  create_crdb  = var.create_crdb_database
-  verify_crdb  = var.verify_crdb_creation
+  create_crdb = var.create_crdb_database
+  verify_crdb = var.verify_crdb_creation
 
   # CRDB configuration
-  crdb_name                = var.crdb_database_name
-  crdb_port                = var.crdb_port
-  crdb_memory_size         = var.crdb_memory_size
-  enable_replication       = var.crdb_enable_replication
-  enable_sharding          = var.crdb_enable_sharding
-  shards_count             = var.crdb_shards_count
+  crdb_name                 = var.crdb_database_name
+  crdb_port                 = var.crdb_port
+  crdb_memory_size          = var.crdb_memory_size
+  enable_replication        = var.crdb_enable_replication
+  enable_sharding           = var.crdb_enable_sharding
+  shards_count              = var.crdb_shards_count
   enable_causal_consistency = var.crdb_enable_causal_consistency
-  aof_policy               = var.crdb_aof_policy
+  aof_policy                = var.crdb_aof_policy
 
   # Participating clusters
   participating_clusters = merge(
     {
       (local.region_list[0]) = {
-        cluster_fqdn     = module.redis_cluster_region1.cluster_fqdn
-        primary_node_ip  = module.redis_cluster_region1.public_ips[0]
+        cluster_fqdn    = module.redis_cluster_region1.cluster_fqdn
+        primary_node_ip = module.redis_cluster_region1.public_ips[0]
       }
     },
     length(local.region_list) > 1 ? {
       (local.region_list[1]) = {
-        cluster_fqdn     = module.redis_cluster_region2[0].cluster_fqdn
-        primary_node_ip  = module.redis_cluster_region2[0].public_ips[0]
+        cluster_fqdn    = module.redis_cluster_region2[0].cluster_fqdn
+        primary_node_ip = module.redis_cluster_region2[0].public_ips[0]
       }
     } : {}
   )

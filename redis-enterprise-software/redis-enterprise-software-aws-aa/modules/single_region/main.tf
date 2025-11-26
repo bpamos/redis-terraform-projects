@@ -131,7 +131,7 @@ module "storage" {
   user_prefix  = var.user_prefix
   cluster_name = "${var.cluster_name}-${var.region}"
   node_count   = var.node_count
-  subnet_ids   = module.vpc.public_subnet_ids  # Matching original deployment
+  subnet_ids   = module.vpc.public_subnet_ids # Matching original deployment
 
   # Instance dependencies
   instance_ids = module.redis_instances.instance_ids
@@ -163,7 +163,7 @@ module "redis_enterprise_install" {
 
   # Instance information
   instance_ids = module.redis_instances.instance_ids
-  public_ips   = module.redis_instances.public_ips  # Contains EIPs when enabled, or regular public IPs
+  public_ips   = module.redis_instances.public_ips # Contains EIPs when enabled, or regular public IPs
   private_ips  = module.redis_instances.private_ips
 
   # Storage dependencies
@@ -189,7 +189,7 @@ module "cluster_bootstrap" {
 
   # Instance information
   instance_ids       = module.redis_instances.instance_ids
-  public_ips         = module.redis_instances.public_ips  # Contains EIPs when enabled
+  public_ips         = module.redis_instances.public_ips # Contains EIPs when enabled
   private_ips        = module.redis_instances.private_ips
   availability_zones = module.redis_instances.availability_zones
 
@@ -207,7 +207,7 @@ module "database_management" {
   hosted_zone_name     = var.hosted_zone_name
 
   # Instance information
-  public_ips = module.redis_instances.public_ips  # Contains EIPs when enabled, or regular public IPs
+  public_ips = module.redis_instances.public_ips # Contains EIPs when enabled, or regular public IPs
 
   # Cluster credentials
   cluster_username = var.cluster_username
@@ -240,7 +240,7 @@ module "test_node" {
 
   # Optional: Pass database endpoint for automatic testing
   redis_endpoint = var.create_sample_database ? "${var.sample_db_name}-${var.sample_db_port}.${local.cluster_fqdn}.${var.hosted_zone_name}" : ""
-  redis_password = ""  # Redis Enterprise databases typically don't have passwords by default
+  redis_password = "" # Redis Enterprise databases typically don't have passwords by default
 
   owner   = var.owner
   project = var.project

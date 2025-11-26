@@ -10,10 +10,10 @@ variable "name_prefix" {
 variable "region_configs" {
   description = "Map of region configurations with VPC details for peering"
   type = map(object({
-    vpc_id                       = string
-    vpc_cidr                     = string
-    private_route_table_id       = string
-    public_route_table_id        = string
+    vpc_id                 = string
+    vpc_cidr               = string
+    private_route_table_id = string
+    public_route_table_id  = string
   }))
 }
 

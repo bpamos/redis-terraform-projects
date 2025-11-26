@@ -90,7 +90,7 @@ variable "participating_clusters" {
   description = "Map of participating cluster configurations"
   type = map(object({
     cluster_fqdn    = string
-    primary_node_ip = string  # Public IP of primary node for API access
+    primary_node_ip = string # Public IP of primary node for API access
   }))
 
   validation {

@@ -265,7 +265,7 @@ variable "rack_awareness" {
 variable "create_sample_database" {
   description = "Create a sample Redis database automatically after cluster setup"
   type        = bool
-  default     = false  # Default to false for Active-Active (use CRDB instead)
+  default     = false # Default to false for Active-Active (use CRDB instead)
 }
 
 variable "sample_db_name" {

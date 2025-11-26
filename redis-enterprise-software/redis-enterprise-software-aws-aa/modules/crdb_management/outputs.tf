@@ -39,10 +39,10 @@ output "crdb_connection_info" {
   description = "Connection information for the CRDB database"
   value = {
     database_name = var.crdb_name
-    port         = var.crdb_port
-    replication  = var.enable_replication
-    sharding     = var.enable_sharding
-    endpoints    = {
+    port          = var.crdb_port
+    replication   = var.enable_replication
+    sharding      = var.enable_sharding
+    endpoints = {
       for region, config in var.participating_clusters :
       region => "redis-${var.crdb_port}.${config.cluster_fqdn}:${var.crdb_port}"
     }
