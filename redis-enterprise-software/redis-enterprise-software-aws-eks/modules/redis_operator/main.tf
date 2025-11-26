@@ -37,18 +37,51 @@ resource "null_resource" "redis_enterprise_operator" {
   }
 
   provisioner "local-exec" {
-    when    = destroy
-    command = <<-EOT
+    when       = destroy
+    on_failure = continue
+    command    = <<-EOT
       KUBEFILE=$(mktemp)
       aws eks update-kubeconfig --region ${self.triggers.aws_region} --name ${self.triggers.cluster_name} --kubeconfig $KUBEFILE --alias ${self.triggers.cluster_name}
-      kubectl delete -n ${self.triggers.namespace} \
-        -f https://raw.githubusercontent.com/RedisLabs/redis-enterprise-k8s-docs/${self.triggers.operator_version}/bundle.yaml \
-        --ignore-not-found=true \
-        --kubeconfig $KUBEFILE
+      # Delete CRDs cluster-scoped; ignore namespace flag
+      kubectl delete -f https://raw.githubusercontent.com/RedisLabs/redis-enterprise-k8s-docs/${self.triggers.operator_version}/bundle.yaml \
+        --ignore-not-found=true --kubeconfig $KUBEFILE
+      # Best-effort delete namespace-scoped objects
+      kubectl delete namespace ${self.triggers.namespace} --ignore-not-found=true --kubeconfig $KUBEFILE
     EOT
   }
 
   depends_on = [kubernetes_namespace.redis_enterprise]
+}
+
+# ClusterRole and Binding for operator to list/watch nodes
+resource "kubernetes_cluster_role" "redis_enterprise_operator_nodes" {
+  metadata {
+    name = "${kubernetes_namespace.redis_enterprise.metadata[0].name}-operator-nodes"
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["nodes"]
+    verbs      = ["get", "list", "watch"]
+  }
+}
+
+resource "kubernetes_cluster_role_binding" "redis_enterprise_operator_nodes" {
+  metadata {
+    name = "${kubernetes_namespace.redis_enterprise.metadata[0].name}-operator-nodes"
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = kubernetes_cluster_role.redis_enterprise_operator_nodes.metadata[0].name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = "redis-enterprise-operator"
+    namespace = kubernetes_namespace.redis_enterprise.metadata[0].name
+  }
 }
 
 #==============================================================================

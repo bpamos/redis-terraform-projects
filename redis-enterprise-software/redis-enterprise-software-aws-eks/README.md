@@ -26,32 +26,243 @@ terraform plan
 terraform apply
 ```
 
-### 3. Access Your Cluster
+### 3. Post-Deployment
 
-After deployment (~10-15 minutes), configure kubectl and access your cluster:
+Deployment takes ~10-15 minutes. See **Getting Started After Deployment** section below for detailed access instructions.
 
-**Note:** Services use ClusterIP (internal access) per Redis Enterprise Kubernetes documentation.
+---
+
+## 📋 Getting Started After Deployment
+
+After `terraform apply` completes successfully, follow these steps to verify and access your Redis Enterprise cluster.
+
+### Step 1: Configure kubectl
 
 ```bash
-# Configure kubectl
-aws eks update-kubeconfig --region us-west-2 --name your-prefix-redis-ent-eks
-
-# Verify cluster status
-kubectl get rec -n redis-enterprise
-kubectl get pods -n redis-enterprise
-kubectl get svc -n redis-enterprise
-
-# Access Redis Enterprise UI (via port-forward)
-kubectl port-forward -n redis-enterprise svc/redis-ent-eks-ui 8443:8443
-# Then access: https://localhost:8443
-
-# Access sample database (via port-forward)
-kubectl port-forward -n redis-enterprise svc/demo 12000:12000
-redis-cli -h localhost -p 12000
-
-# Or deploy an app in the cluster to access Redis internally:
-# Service FQDN: demo.redis-enterprise.svc.cluster.local:12000
+# Configure kubectl to connect to your EKS cluster
+aws eks update-kubeconfig --region us-west-2 --name bamos-redis-ent-eks
 ```
+
+**Output:** `Updated context arn:aws:eks:us-west-2:...:cluster/bamos-redis-ent-eks in /Users/.../.kube/config`
+
+---
+
+### Step 2: Verify Cluster Status
+
+```bash
+# Check Redis Enterprise Cluster (REC) status
+kubectl get rec -n redis-enterprise
+```
+
+**Expected Output:**
+```
+NAME            NODES   VERSION    STATE     SPEC STATUS   LICENSE STATE
+redis-ent-eks   3       7.4.6-22   Running   Valid         Valid
+```
+
+✅ **STATE should be "Running"** - If it shows "BootstrappingFirstPod" or "Initializing", wait 2-3 minutes and check again.
+
+```bash
+# Check all pods are running
+kubectl get pods -n redis-enterprise
+```
+
+**Expected Output:**
+```
+NAME                                             READY   STATUS    RESTARTS   AGE
+redis-ent-eks-0                                  2/2     Running   0          5m
+redis-ent-eks-1                                  2/2     Running   0          4m
+redis-ent-eks-2                                  2/2     Running   0          3m
+redis-ent-eks-services-rigger-...                1/1     Running   0          5m
+redis-enterprise-operator-...                    2/2     Running   0          6m
+```
+
+✅ **All redis-ent-eks-* pods should show "2/2 Running"**
+
+```bash
+# Check database status
+kubectl get redb -n redis-enterprise
+```
+
+**Expected Output:**
+```
+NAME   VERSION   PORT    CLUSTER         SHARDS   STATUS   SPEC STATUS   AGE
+demo   7.2.4     12000   redis-ent-eks   2        active   Valid         3m
+```
+
+✅ **STATUS should be "active"**
+
+```bash
+# List all services
+kubectl get svc -n redis-enterprise
+```
+
+**Expected Output:**
+```
+NAME                 TYPE        CLUSTER-IP       PORT(S)
+demo                 ClusterIP   172.20.58.159    12000/TCP
+redis-ent-eks-ui     ClusterIP   172.20.178.95    8443/TCP
+...
+```
+
+---
+
+### Step 3: Get Your Credentials
+
+```bash
+# Get REC admin password (should output: admin)
+kubectl get secret redis-ent-eks -n redis-enterprise \
+  -o jsonpath='{.data.password}' | base64 -d && echo
+```
+
+**Output:** `admin`
+
+```bash
+# Get database password (should output: admin)
+kubectl get secret demo-password -n redis-enterprise \
+  -o jsonpath='{.data.password}' | base64 -d && echo
+```
+
+**Output:** `admin`
+
+**Default Credentials:**
+- **REC Username:** `admin@admin.com`
+- **REC Password:** `admin`
+- **Database Password:** `admin`
+
+---
+
+### Step 4: Access the Redis Enterprise UI
+
+**In Terminal 1** (keep this running):
+```bash
+# Port-forward the UI service
+kubectl port-forward -n redis-enterprise svc/redis-ent-eks-ui 8443:8443
+```
+
+**Output:**
+```
+Forwarding from 127.0.0.1:8443 -> 8443
+Forwarding from [::1]:8443 -> 8443
+```
+
+**⚠️ Keep this terminal open!** The port-forward runs in the foreground.
+
+**In your web browser:**
+1. Open: **https://localhost:8443**
+2. Click "Advanced" → "Proceed to localhost (unsafe)" (self-signed certificate is expected)
+3. Login with:
+   - **Username:** `admin@admin.com`
+   - **Password:** `admin`
+
+✅ **You should see the Redis Enterprise dashboard!**
+
+---
+
+### Step 5: Access the Database and Write Keys
+
+**In Terminal 2** (open a new terminal, keep this running):
+```bash
+# Port-forward the demo database service
+kubectl port-forward -n redis-enterprise svc/demo 12000:12000
+```
+
+**Output:**
+```
+Forwarding from 127.0.0.1:12000 -> 12000
+Forwarding from [::1]:12000 -> 12000
+```
+
+**⚠️ Keep this terminal open!** The port-forward runs in the foreground.
+
+**In Terminal 3** (open a new terminal):
+```bash
+# Connect to Redis with redis-cli
+redis-cli -h localhost -p 12000 -a admin
+```
+
+**Now write and read some keys:**
+```bash
+# Set a simple key
+SET mykey "Hello Redis Enterprise on EKS!"
+
+# Read it back
+GET mykey
+# Output: "Hello Redis Enterprise on EKS!"
+
+# Set a counter
+SET counter 100
+
+# Increment it
+INCR counter
+# Output: (integer) 101
+
+# Get the counter value
+GET counter
+# Output: "101"
+
+# Set user data
+SET user:1:name "Brandon"
+SET user:1:email "brandon@example.com"
+
+# Get user data
+GET user:1:name
+# Output: "Brandon"
+
+# Check all keys
+KEYS *
+# Output: 1) "mykey" 2) "counter" 3) "user:1:name" 4) "user:1:email"
+
+# Delete a key
+DEL counter
+
+# Exit redis-cli
+exit
+```
+
+✅ **Your Redis Enterprise cluster is fully operational!**
+
+---
+
+### Step 6: Access from Inside the Cluster (Optional)
+
+If you deploy applications as pods in the cluster, they can access Redis directly without port-forwarding:
+
+**Database Service FQDN:**
+```
+demo.redis-enterprise.svc.cluster.local:12000
+```
+
+**Example: Test from a temporary pod**
+```bash
+# Start a temporary Redis CLI pod
+kubectl run redis-test --image=redis:latest -n redis-enterprise --rm -it -- bash
+
+# Inside the pod, connect to the database
+redis-cli -h demo -p 12000 -a admin
+
+# Write a key
+SET from-pod "Hello from inside the cluster!"
+GET from-pod
+
+# Exit
+exit
+```
+
+---
+
+### Summary Checklist
+
+- ✅ REC shows `STATE: Running`
+- ✅ All 3 redis-ent-eks-* pods are `2/2 Running`
+- ✅ Database shows `STATUS: active`
+- ✅ Can login to UI at https://localhost:8443
+- ✅ Can connect to database with redis-cli
+- ✅ Can write and read keys successfully
+
+**🎉 Your Redis Enterprise cluster on EKS is ready for production use!**
+
+---
 
 ## ⚙️ Configuration
 

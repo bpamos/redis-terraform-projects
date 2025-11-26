@@ -72,11 +72,12 @@ resource "kubernetes_secret" "redis_database_password" {
     namespace = var.namespace
   }
 
-  data = {
-    password = base64encode(var.database_password)
-  }
-
+  # Kubernetes secrets with 'data' field are automatically base64 encoded by Terraform
   type = "Opaque"
+
+  data = {
+    password = var.database_password
+  }
 }
 
 #==============================================================================

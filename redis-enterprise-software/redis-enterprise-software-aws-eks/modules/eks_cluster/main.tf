@@ -129,8 +129,8 @@ resource "null_resource" "coredns_addon" {
   }
 
   provisioner "local-exec" {
-    when = destroy
-    command = <<-EOT
+    when       = destroy
+    command    = <<-EOT
       aws eks delete-addon \
         --cluster-name ${self.triggers.cluster_name} \
         --addon-name coredns \

@@ -199,7 +199,7 @@ variable "redis_cluster_storage_class" {
 variable "redis_enterprise_version_tag" {
   description = "Redis Enterprise image tag (e.g., 7.4.6-xx) matching the operator"
   type        = string
-  default     = "7.4.6-53"
+  default     = "7.4.6-22"
 }
 
 variable "redis_ui_service_type" {
@@ -217,7 +217,7 @@ variable "ui_internal_lb_enabled" {
 variable "ui_service_annotations" {
   description = "Annotations to apply to the UI service (used when enabling an internal LB)."
   type        = map(string)
-  default     = {
+  default = {
     "service.beta.kubernetes.io/aws-load-balancer-internal" = "true"
   }
 }
@@ -338,6 +338,13 @@ variable "sample_db_modules" {
 variable "sample_db_redis_version" {
   description = "Redis OSS version for sample database (empty for cluster default)"
   type        = string
+  default     = ""
+}
+
+variable "sample_db_password" {
+  description = "Password for sample database (empty for no password)"
+  type        = string
+  sensitive   = true
   default     = ""
 }
 

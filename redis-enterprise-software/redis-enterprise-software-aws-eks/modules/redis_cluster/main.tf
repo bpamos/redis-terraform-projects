@@ -4,16 +4,17 @@
 
 resource "kubernetes_secret" "redis_enterprise_admin" {
   metadata {
-    name      = "${var.cluster_name}-admin-credentials"
+    name      = var.cluster_name # Must match cluster name exactly for bootstrapper
     namespace = var.namespace
   }
 
-  data = {
-    username = base64encode(var.admin_username)
-    password = base64encode(var.admin_password)
-  }
-
+  # Kubernetes secrets with 'data' field are automatically base64 encoded by Terraform
   type = "Opaque"
+
+  data = {
+    username = var.admin_username
+    password = var.admin_password
+  }
 }
 
 # Bulletin board configmap required by bootstrapper
@@ -60,6 +61,7 @@ resource "kubectl_manifest" "redis_enterprise_cluster" {
 
       # Admin credentials
       username: ${var.admin_username}
+      # Secret name matches cluster name, so it will be auto-discovered
 
       # UI service configuration
       uiServiceType: ${var.ui_service_type}
@@ -70,7 +72,7 @@ resource "kubectl_manifest" "redis_enterprise_cluster" {
       # Additional configuration
       redisEnterpriseImageSpec:
         imagePullPolicy: IfNotPresent
-        versionTag: ${var.redis_enterprise_version_tag}
+        ${var.redis_enterprise_version_tag != "" ? "versionTag: ${var.redis_enterprise_version_tag}" : ""}
 
       ${var.license_secret_name != "" ? "# License configuration\n      licenseSecretName: ${var.license_secret_name}" : ""}
 
@@ -98,4 +100,49 @@ resource "time_sleep" "wait_for_cluster" {
   depends_on = [kubectl_manifest.redis_enterprise_cluster]
 
   create_duration = "180s" # Wait 3 minutes for cluster to become ready
+}
+
+#==============================================================================
+# CLEANUP ON DESTROY (prevents hanging)
+#==============================================================================
+
+resource "null_resource" "cleanup_on_destroy" {
+  triggers = {
+    rec_name         = var.cluster_name
+    eks_cluster_name = var.eks_cluster_name
+    aws_region       = var.aws_region
+    namespace        = var.namespace
+  }
+
+  provisioner "local-exec" {
+    when       = destroy
+    command    = <<-EOT
+      # Configure kubectl for the EKS cluster
+      KUBEFILE=$(mktemp)
+      aws eks update-kubeconfig --region ${self.triggers.aws_region} --name ${self.triggers.eks_cluster_name} --kubeconfig $KUBEFILE
+
+      # Delete all REDBs first (databases)
+      kubectl delete redb --all -n ${self.triggers.namespace} --ignore-not-found=true --timeout=120s --kubeconfig $KUBEFILE || true
+
+      # Wait for databases to be fully deleted
+      sleep 30
+
+      # Delete the REC (cluster)
+      kubectl delete rec ${self.triggers.rec_name} -n ${self.triggers.namespace} --ignore-not-found=true --timeout=120s --kubeconfig $KUBEFILE || true
+
+      # Wait for cluster pods to terminate
+      sleep 30
+
+      # Force delete any remaining PVCs
+      kubectl delete pvc --all -n ${self.triggers.namespace} --ignore-not-found=true --timeout=60s --kubeconfig $KUBEFILE || true
+
+      # Cleanup temp file
+      rm -f $KUBEFILE
+
+      echo "Redis Enterprise cleanup completed"
+    EOT
+    on_failure = continue
+  }
+
+  depends_on = [kubectl_manifest.redis_enterprise_cluster]
 }

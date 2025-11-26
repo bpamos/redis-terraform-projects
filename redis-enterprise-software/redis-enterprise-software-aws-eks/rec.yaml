@@ -1,0 +1,31 @@
+apiVersion: app.redislabs.com/v1
+kind: RedisEnterpriseCluster
+metadata:
+  name: redis-ent-eks
+  namespace: redis-enterprise
+spec:
+  nodes: 3
+  redisEnterpriseImageSpec:
+    versionTag: "7.4.6-22"
+    imagePullPolicy: IfNotPresent
+  persistentSpec:
+    enabled: true
+    storageClassName: "gp3"
+    volumeSize: "50Gi"
+  redisEnterpriseNodeResources:
+    requests:
+      cpu: "1"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  rackAwarenessNodeLabel: "topology.kubernetes.io/zone"
+  uiServiceType: ClusterIP
+  services:
+    apiService:
+      type: ClusterIP
+  servicesRiggerSpec:
+    databaseServiceType: cluster_ip,headless
+    serviceNaming: bdb_name
+  username: admin@admin.com
+  clusterCredentialSecretName: redis-ent-eks

@@ -3,6 +3,16 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "eks_cluster_name" {
+  description = "Name of the EKS cluster (for kubectl configuration during destroy)"
+  type        = string
+}
+
+variable "aws_region" {
+  description = "AWS region (for kubectl configuration during destroy)"
+  type        = string
+}
+
 variable "namespace" {
   description = "Kubernetes namespace for Redis Enterprise cluster"
   type        = string
@@ -83,6 +93,7 @@ variable "ui_service_annotations" {
 variable "redis_enterprise_version_tag" {
   description = "Redis Enterprise image tag (matching the operator version)"
   type        = string
+  default     = ""
 }
 
 

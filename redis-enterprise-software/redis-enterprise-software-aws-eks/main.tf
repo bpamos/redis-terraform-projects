@@ -137,20 +137,22 @@ module "redis_operator" {
 module "redis_cluster" {
   source = "./modules/redis_cluster"
 
-  cluster_name       = var.cluster_name
-  namespace          = module.redis_operator.namespace
-  node_count         = var.redis_cluster_nodes
-  admin_username     = var.redis_cluster_username
-  admin_password     = var.redis_cluster_password
-  node_memory_limit  = var.redis_cluster_memory
-  storage_class_name = module.ebs_csi_driver.storage_class_name
-  storage_size       = var.redis_cluster_storage_size
+  cluster_name                 = var.cluster_name
+  eks_cluster_name             = module.eks.cluster_name
+  aws_region                   = var.aws_region
+  namespace                    = module.redis_operator.namespace
+  node_count                   = var.redis_cluster_nodes
+  admin_username               = var.redis_cluster_username
+  admin_password               = var.redis_cluster_password
+  node_memory_limit            = var.redis_cluster_memory
+  storage_class_name           = module.ebs_csi_driver.storage_class_name
+  storage_size                 = var.redis_cluster_storage_size
   redis_enterprise_version_tag = var.redis_enterprise_version_tag
 
   # Service type configuration
-  ui_service_type       = var.ui_internal_lb_enabled ? "LoadBalancer" : var.redis_ui_service_type
+  ui_service_type        = var.ui_internal_lb_enabled ? "LoadBalancer" : var.redis_ui_service_type
   ui_service_annotations = var.ui_internal_lb_enabled ? var.ui_service_annotations : {}
-  database_service_type = var.redis_database_service_type
+  database_service_type  = var.redis_database_service_type
 
   # License configuration
   license_secret_name = var.redis_license_secret_name
@@ -179,6 +181,9 @@ module "redis_database" {
   memory_size     = var.sample_db_memory
   database_port   = var.sample_db_port
   replication     = var.sample_db_replication
+
+  # Database password
+  database_password = var.sample_db_password
 
   # Service type configuration
   database_service_type = var.sample_db_service_type
