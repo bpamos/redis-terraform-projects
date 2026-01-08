@@ -193,3 +193,20 @@ output "test_node_info" {
     ssh_command = module.test_node[0].ssh_command
   } : null
 }
+
+# =============================================================================
+# OPTIONAL: ECS TESTING INFRASTRUCTURE OUTPUTS
+# =============================================================================
+
+output "ecs_testing" {
+  description = "ECS testing infrastructure (only if enabled)"
+  value = var.enable_ecs_testing ? {
+    clusters            = module.ecs_testing[0].cluster_names
+    services            = module.ecs_testing[0].service_names
+    scale_up_commands   = module.ecs_testing[0].scale_up_commands
+    scale_down_commands = module.ecs_testing[0].scale_down_commands
+    view_logs_commands  = module.ecs_testing[0].view_logs_commands
+    quick_start         = module.ecs_testing[0].quick_start
+    cost_info           = module.ecs_testing[0].cost_info
+  } : null
+}

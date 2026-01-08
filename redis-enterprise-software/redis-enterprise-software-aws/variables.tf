@@ -366,3 +366,42 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# =============================================================================
+# OPTIONAL: ECS TESTING INFRASTRUCTURE
+# =============================================================================
+
+variable "enable_ecs_testing" {
+  description = "Create ECS Fargate testing infrastructure for load testing and application simulation (off by default, no cost when disabled)"
+  type        = bool
+  default     = false
+}
+
+variable "ecs_default_task_count" {
+  description = "Default number of ECS tasks to run (0 = no cost)"
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.ecs_default_task_count >= 0 && var.ecs_default_task_count <= 100
+    error_message = "ECS task count must be between 0 and 100."
+  }
+}
+
+variable "ecs_enable_load_testing" {
+  description = "Enable redis-benchmark task definition for load testing"
+  type        = bool
+  default     = false
+}
+
+variable "ecs_enable_container_insights" {
+  description = "Enable CloudWatch Container Insights for ECS clusters"
+  type        = bool
+  default     = true
+}
+
+variable "ecs_test_container_image" {
+  description = "Docker image for testing (must have redis-cli installed)"
+  type        = string
+  default     = "redis:latest"
+}

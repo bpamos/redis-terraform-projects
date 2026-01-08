@@ -234,3 +234,55 @@ module "test_node" {
   project = var.project
   tags    = var.tags
 }
+
+# =============================================================================
+# OPTIONAL: ECS TESTING INFRASTRUCTURE
+# =============================================================================
+# Creates ECS Fargate clusters for load testing and application simulation
+# Scaled to 0 by default (no cost) - scale up when testing
+# Set enable_ecs_testing = true in terraform.tfvars to use
+# =============================================================================
+
+module "ecs_testing" {
+  count  = var.enable_ecs_testing && var.create_sample_database ? 1 : 0
+  source = "../../modules/redis_ecs_testing"
+
+  # Auto-wire Redis endpoint for this region
+  redis_endpoints = {
+    (var.aws_region) = {
+      # Endpoint is hostname only, port is from sample_db_port variable
+      host = module.database_management.sample_database_endpoint
+      port = var.sample_db_port
+    }
+  }
+
+  # Auto-wire VPC configuration for this region
+  vpc_config = {
+    (var.aws_region) = {
+      vpc_id     = module.vpc.vpc_id
+      subnet_ids = module.vpc.private_subnet_ids
+    }
+  }
+
+  # Naming
+  cluster_prefix = local.name_prefix
+
+  # Optional: Customize testing configuration
+  default_task_count        = var.ecs_default_task_count
+  enable_load_testing       = var.ecs_enable_load_testing
+  enable_container_insights = var.ecs_enable_container_insights
+  test_container_image      = var.ecs_test_container_image
+
+  # Tags
+  tags = merge(
+    var.tags,
+    {
+      Component = "ECS Testing Infrastructure"
+    }
+  )
+
+  # Ensure database is ready before creating ECS testing
+  depends_on = [
+    module.database_management
+  ]
+}
