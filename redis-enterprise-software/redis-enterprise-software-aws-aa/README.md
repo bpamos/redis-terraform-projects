@@ -8,9 +8,24 @@ Deploy geo-distributed Redis Enterprise Software clusters with automated Active-
 
 1. **AWS Account** with credentials configured
 2. **Terraform** >= 1.0
-3. **Route53 Hosted Zone** for DNS
-4. **EC2 Key Pairs** in ALL target regions
-5. **Redis Enterprise Download URL** from [redis.io](https://redis.io/downloads/)
+   ```bash
+   terraform --version
+   # Should show: Terraform v1.0.0 or higher
+   ```
+3. **jq** - JSON processor (required for CRDB creation)
+   ```bash
+   # Check if installed
+   jq --version
+   # Should show: jq-1.6 or higher
+
+   # Install if needed:
+   brew install jq                    # Mac
+   sudo apt-get install -y jq         # Ubuntu/Debian
+   sudo yum install -y jq             # RHEL/Amazon Linux/CentOS
+   ```
+4. **Route53 Hosted Zone** for DNS
+5. **EC2 Key Pairs** in ALL target regions
+6. **Redis Enterprise Download URL** from [redis.io](https://redis.io/downloads/)
 
 ### Deploy in 3 Steps
 

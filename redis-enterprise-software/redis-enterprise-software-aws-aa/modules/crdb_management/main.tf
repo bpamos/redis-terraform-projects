@@ -73,42 +73,16 @@ resource "null_resource" "create_crdb" {
     crdb_config_hash = md5(jsonencode(local.crdb_config))
   }
 
-  # Create CRDB via REST API
+  # Create CRDB via improved bash script with retry logic and better error handling
   provisioner "local-exec" {
-    command = <<-EOT
-      echo "Creating Active-Active CRDB database: ${var.crdb_name}"
-      echo "Primary cluster FQDN: ${local.primary_cluster_url}"
-      echo "Primary cluster API: ${local.primary_cluster_api_url}"
-      echo "Participating regions: ${join(", ", keys(var.participating_clusters))}"
+    command = "bash ${path.module}/scripts/create-crdb.sh"
 
-      # Wait for clusters to be ready
-      sleep 30
-
-      # Create CRDB database (using IP for API access)
-      response=$(curl -k -s -w "\n%%{http_code}" \
-        -u "${var.cluster_username}:${var.cluster_password}" \
-        -X POST ${local.primary_cluster_api_url}/v1/crdbs \
-        -H "Content-Type: application/json" \
-        -d @${local_file.crdb_config.filename})
-
-      http_code=$(echo "$response" | tail -n1)
-      response_body=$(echo "$response" | sed '$d')
-
-      echo "HTTP Status: $http_code"
-      echo "Response: $response_body"
-
-      # Check if creation was successful (200-299 status codes)
-      if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
-        echo "✅ CRDB database created successfully!"
-        echo "$response_body" > ${path.module}/crdb_creation_response.json
-        exit 0
-      else
-        echo "❌ Failed to create CRDB database"
-        echo "Status code: $http_code"
-        echo "Response: $response_body"
-        exit 1
-      fi
-    EOT
+    environment = {
+      # Pass configuration as JSON (script can parse this)
+      CRDB_CONFIG_JSON = jsonencode(local.crdb_config)
+      CLUSTER_USERNAME = var.cluster_username
+      CLUSTER_PASSWORD = var.cluster_password
+    }
   }
 
   # Delete CRDB when destroying (optional - commented out for safety)
