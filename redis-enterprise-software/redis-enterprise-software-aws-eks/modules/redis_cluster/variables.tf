@@ -114,6 +114,34 @@ variable "license_secret_name" {
 }
 
 #==============================================================================
+# REDIS FLEX (AUTO TIERING) CONFIGURATION
+#==============================================================================
+
+variable "enable_redis_flex" {
+  description = "Enable Redis Flex (Auto Tiering) for flash storage"
+  type        = bool
+  default     = false
+}
+
+variable "redis_flex_storage_class" {
+  description = "Storage class for Redis Flex flash storage (must be local NVMe SSDs)"
+  type        = string
+  default     = "local-scsi"
+}
+
+variable "redis_flex_flash_disk_size" {
+  description = "Flash disk size per node for Redis Flex (e.g., '100G')"
+  type        = string
+  default     = "100G"
+}
+
+variable "redis_flex_storage_driver" {
+  description = "Storage driver for Redis Flex: 'speedb' or 'rocksdb'"
+  type        = string
+  default     = "speedb"
+}
+
+#==============================================================================
 # INGRESS/ROUTE CONFIGURATION (for external access)
 #==============================================================================
 

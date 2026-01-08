@@ -148,3 +148,19 @@ variable "client_authentication_certificates" {
   type        = list(string)
   default     = []
 }
+
+#==============================================================================
+# REDIS FLEX (AUTO TIERING) CONFIGURATION
+#==============================================================================
+
+variable "enable_redis_flex" {
+  description = "Enable Redis Flex (Auto Tiering) for this database. Requires cluster-level Redis Flex to be enabled."
+  type        = bool
+  default     = false
+}
+
+variable "rof_ram_size" {
+  description = "RAM size for Redis Flex database (minimum 10% of memory_size, e.g., '10GB'). Required if enable_redis_flex is true."
+  type        = string
+  default     = "10GB"
+}

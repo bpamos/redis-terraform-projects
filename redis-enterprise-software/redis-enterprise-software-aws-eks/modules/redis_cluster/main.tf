@@ -75,6 +75,15 @@ resource "kubectl_manifest" "redis_enterprise_cluster" {
         ${var.redis_enterprise_version_tag != "" ? "versionTag: ${var.redis_enterprise_version_tag}" : ""}
 
       ${var.license_secret_name != "" ? "# License configuration\n      licenseSecretName: ${var.license_secret_name}" : ""}
+%{if var.enable_redis_flex~}
+
+      # Redis Flex (Auto Tiering) configuration for flash storage
+      redisOnFlashSpec:
+        enabled: true
+        bigStoreDriver: ${var.redis_flex_storage_driver}
+        storageClassName: "${var.redis_flex_storage_class}"
+        flashDiskSize: ${var.redis_flex_flash_disk_size}
+%{endif~}
 
       ${var.enable_ingress ? <<-INGRESS
       # Ingress/Route configuration for external access

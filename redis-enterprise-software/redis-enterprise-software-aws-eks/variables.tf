@@ -202,6 +202,54 @@ variable "redis_enterprise_version_tag" {
   default     = "7.4.6-22"
 }
 
+#==============================================================================
+# REDIS FLEX (AUTO TIERING) CONFIGURATION
+#==============================================================================
+
+variable "enable_redis_flex" {
+  description = "Enable Redis Flex (Auto Tiering) for flash storage. Requires local NVMe SSDs on worker nodes."
+  type        = bool
+  default     = false
+}
+
+variable "redis_flex_storage_class" {
+  description = "Storage class for Redis Flex flash storage (must be local NVMe SSDs, not EBS)"
+  type        = string
+  default     = "local-scsi"
+}
+
+variable "redis_flex_flash_disk_size" {
+  description = "Flash disk size per node for Redis Flex (e.g., '100G', '500G')"
+  type        = string
+  default     = "100G"
+}
+
+variable "redis_flex_storage_driver" {
+  description = "Storage driver for Redis Flex: 'speedb' (default) or 'rocksdb'"
+  type        = string
+  default     = "speedb"
+  validation {
+    condition     = contains(["speedb", "rocksdb"], var.redis_flex_storage_driver)
+    error_message = "Storage driver must be either 'speedb' or 'rocksdb'."
+  }
+}
+
+variable "sample_db_enable_redis_flex" {
+  description = "Enable Redis Flex for sample database (requires enable_redis_flex=true at cluster level)"
+  type        = bool
+  default     = false
+}
+
+variable "sample_db_rof_ram_size" {
+  description = "RAM size for Redis Flex database (minimum 10% of sample_db_memory, e.g., '10GB')"
+  type        = string
+  default     = "10GB"
+}
+
+#==============================================================================
+# REDIS UI AND DATABASE SERVICE CONFIGURATION
+#==============================================================================
+
 variable "redis_ui_service_type" {
   description = "Service type for Redis Enterprise UI (ClusterIP for internal, LoadBalancer for external)"
   type        = string
@@ -346,6 +394,52 @@ variable "sample_db_password" {
   type        = string
   sensitive   = true
   default     = ""
+}
+
+#==============================================================================
+# REDIS TEST CLIENT CONFIGURATION
+#==============================================================================
+
+variable "create_test_client" {
+  description = "Create a test client pod with redis-cli, redis-benchmark, and memtier_benchmark"
+  type        = bool
+  default     = false
+}
+
+variable "test_client_name" {
+  description = "Name of the test client deployment"
+  type        = string
+  default     = "redis-test-client"
+}
+
+variable "test_client_cpu_request" {
+  description = "CPU request for test client (t3.micro = 500m)"
+  type        = string
+  default     = "500m"
+}
+
+variable "test_client_cpu_limit" {
+  description = "CPU limit for test client (t3.micro = 1000m = 1 vCPU)"
+  type        = string
+  default     = "1000m"
+}
+
+variable "test_client_memory_request" {
+  description = "Memory request for test client (t3.micro = 512Mi)"
+  type        = string
+  default     = "512Mi"
+}
+
+variable "test_client_memory_limit" {
+  description = "Memory limit for test client (t3.micro = 1Gi = 1GB RAM)"
+  type        = string
+  default     = "1Gi"
+}
+
+variable "test_client_create_scripts" {
+  description = "Create ConfigMap with helper test scripts"
+  type        = bool
+  default     = true
 }
 
 #==============================================================================

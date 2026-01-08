@@ -25,6 +25,12 @@ locals {
     "${var.aws_region}c"
   ]
 
+  # Validate instance types for Redis Flex
+  flex_compatible_instances = ["i3.xlarge", "i3.2xlarge", "i3.4xlarge", "i3.8xlarge", "i3.16xlarge",
+  "i4i.xlarge", "i4i.2xlarge", "i4i.4xlarge", "i4i.8xlarge", "i4i.16xlarge"]
+
+  using_flex_instance = length([for type in var.node_instance_types : type if contains(local.flex_compatible_instances, type)]) > 0
+
   tags = merge(
     var.tags,
     {
@@ -34,6 +40,30 @@ locals {
       ClusterName = var.cluster_name
     }
   )
+}
+
+#==============================================================================
+# VALIDATION: Redis Flex requires i3/i4i instances with NVMe SSDs
+#==============================================================================
+
+resource "null_resource" "validate_flex_config" {
+  count = var.enable_redis_flex && !local.using_flex_instance ? 1 : 0
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "ERROR: Redis Flex (enable_redis_flex=true) requires i3 or i4i instance types with local NVMe SSDs."
+      echo "Current instance types: ${join(", ", var.node_instance_types)}"
+      echo "Supported instance types: i3.xlarge, i3.2xlarge, i4i.xlarge, i4i.2xlarge, etc."
+      exit 1
+    EOT
+  }
+
+  lifecycle {
+    precondition {
+      condition     = !var.enable_redis_flex || local.using_flex_instance
+      error_message = "Redis Flex requires i3.* or i4i.* instance types with local NVMe SSDs. Current: ${join(", ", var.node_instance_types)}"
+    }
+  }
 }
 
 #==============================================================================
@@ -116,6 +146,20 @@ module "ebs_csi_driver" {
 }
 
 #==============================================================================
+# LOCAL STORAGE PROVISIONER (for Redis Flex NVMe discovery)
+#==============================================================================
+
+module "local_storage_provisioner" {
+  source = "./modules/local_storage_provisioner"
+
+  enable_provisioner = var.enable_redis_flex
+  cluster_ready      = module.ebs_csi_driver
+
+  # Only deploy if Redis Flex is enabled
+  # This discovers and mounts NVMe SSDs on i3/i4i instances
+}
+
+#==============================================================================
 # REDIS ENTERPRISE OPERATOR MODULE
 #==============================================================================
 
@@ -157,6 +201,12 @@ module "redis_cluster" {
   # License configuration
   license_secret_name = var.redis_license_secret_name
 
+  # Redis Flex (Auto Tiering) configuration
+  enable_redis_flex          = var.enable_redis_flex
+  redis_flex_storage_class   = var.redis_flex_storage_class
+  redis_flex_flash_disk_size = var.redis_flex_flash_disk_size
+  redis_flex_storage_driver  = var.redis_flex_storage_driver
+
   # Ingress/Route configuration
   enable_ingress      = var.redis_enable_ingress
   api_fqdn_url        = var.redis_api_fqdn_url
@@ -164,7 +214,10 @@ module "redis_cluster" {
   ingress_method      = var.redis_ingress_method
   ingress_annotations = var.redis_ingress_annotations
 
-  depends_on = [module.redis_operator]
+  depends_on = [
+    module.redis_operator,
+    module.local_storage_provisioner # Ensures NVMe devices are ready for Redis Flex
+  ]
 }
 
 #==============================================================================
@@ -194,7 +247,46 @@ module "redis_database" {
   modules_list  = var.sample_db_modules
   redis_version = var.sample_db_redis_version
 
+  # Redis Flex (Auto Tiering) configuration
+  enable_redis_flex = var.sample_db_enable_redis_flex
+  rof_ram_size      = var.sample_db_rof_ram_size
+
   cluster_ready = module.redis_cluster
 
   depends_on = [module.redis_cluster]
+}
+
+#==============================================================================
+# REDIS TEST CLIENT (Optional)
+#==============================================================================
+# Deploys a test pod with redis-cli, redis-benchmark, and memtier_benchmark
+# for testing connectivity and performance of Redis Enterprise databases
+#==============================================================================
+
+module "redis_test_client" {
+  source = "./modules/redis_test_client"
+
+  count = var.create_test_client ? 1 : 0
+
+  deployment_name = var.test_client_name
+  namespace       = module.redis_operator.namespace
+
+  # Connect to sample database by default
+  redis_host     = "${var.sample_db_name}.${module.redis_operator.namespace}.svc.cluster.local"
+  redis_port     = var.sample_db_port
+  redis_password = var.sample_db_password
+
+  # Resource sizing (t3.micro equivalent: 1 vCPU, 1GB RAM)
+  cpu_request    = var.test_client_cpu_request
+  cpu_limit      = var.test_client_cpu_limit
+  memory_request = var.test_client_memory_request
+  memory_limit   = var.test_client_memory_limit
+
+  # Helper test scripts
+  create_test_scripts = var.test_client_create_scripts
+
+  # Ensure database is ready first
+  redis_cluster_ready = module.redis_database
+
+  depends_on = [module.redis_database]
 }

@@ -2,6 +2,28 @@
 # REDIS ENTERPRISE SOFTWARE ON AWS EKS - CONFIGURATION
 # Copy this file to terraform.tfvars and update these values before deployment
 #==============================================================================
+#
+# 🚀 QUICK START - Choose ONE deployment mode:
+#
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │ OPTION 1: RAM-ONLY (Default - Active by default)                        │
+# │ ✓ No changes needed - ready to deploy!                                  │
+# │ ✓ Uses t3.xlarge instances with EBS GP3 storage                         │
+# │ ✓ Simple, lower cost for smaller datasets                               │
+# │ ✓ Just run: terraform init && terraform apply                           │
+# └─────────────────────────────────────────────────────────────────────────┘
+#
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │ OPTION 2: REDIS FLEX (Automatic RAM + Flash Tiering)                    │
+# │ ✓ Comment out Option 1, uncomment Option 2 in TWO sections below:       │
+# │   • Section: "EKS NODE GROUP CONFIGURATION" (~line 71-83)                │
+# │   • Section: "REDIS FLEX CONFIGURATION" (~line 153-172)                  │
+# │ ✓ Automatic tiering between 12GB RAM + 108GB NVMe flash                 │
+# │ ✓ 70-80% cost savings vs RAM-only for large datasets                    │
+# │ ✓ Everything automated (NVMe discovery, storage provisioning)           │
+# └─────────────────────────────────────────────────────────────────────────┘
+#
+#==============================================================================
 
 #==============================================================================
 # ⚠️  REQUIRED VALUES - MUST BE CHANGED BEFORE DEPLOYMENT
@@ -35,12 +57,30 @@ cluster_endpoint_private_access = true  # Allow private access from VPC
 environment = "dev" # dev, staging, or prod
 
 #==============================================================================
-# EKS NODE GROUP CONFIGURATION (Optional - Good defaults provided)
+# EKS NODE GROUP CONFIGURATION
 #==============================================================================
+# Choose ONE option below: Comment one, uncomment the other
+#
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │ OPTION 1: RAM-ONLY (Default) - Standard EBS storage                     │
+# │ ✓ Active by default                                                     │
+# │ ✓ Uses t3.xlarge with EBS GP3 storage only                              │
+# │ ✓ Simpler, lower cost for smaller datasets                              │
+# └─────────────────────────────────────────────────────────────────────────┘
 
-# Instance Configuration
-node_instance_types = ["t3.xlarge"] # EC2 instance types for worker nodes (16GB RAM)
-node_disk_size      = 100           # Disk size in GB for each worker node
+node_instance_types = ["t3.xlarge"] # RAM-only: Standard instance
+node_disk_size      = 100           # EBS disk size in GB
+
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │ OPTION 2: REDIS FLEX - Automatic RAM + Flash tiering                    │
+# │ ✓ Uncomment these 2 lines (and comment out Option 1 above)              │
+# │ ✓ Uses i3.2xlarge with 61GB RAM + 1.9TB NVMe flash storage              │
+# │ ✓ 70-80% cost savings vs RAM-only for large datasets                    │
+# │ ✓ Everything automated (no manual kubectl commands needed)              │
+# └─────────────────────────────────────────────────────────────────────────┘
+
+# node_instance_types = ["i3.2xlarge"]  # REDIS FLEX: i3/i4i required
+# node_disk_size      = 100              # EBS for OS only (NVMe for flash)
 
 # Node Group Scaling
 node_desired_size = 3 # Desired number of worker nodes
@@ -69,16 +109,17 @@ redis_enterprise_namespace = "redis-enterprise"
 
 # Operator Version (bundle version)
 # Visit: https://github.com/RedisLabs/redis-enterprise-k8s-docs/releases
-redis_operator_version = "v7.4.6-2" # Stable version with Redis 7.4.6
+redis_operator_version = "v8.0.2-2" # Latest version (Stable: v7.4.6-2)
 
 # Cluster Configuration
 redis_cluster_nodes = 3 # Number of Redis Enterprise nodes (minimum 3 for HA)
 
 # Resource Allocation per Redis Enterprise Node
-redis_cluster_memory = "4Gi" # Memory limit per node (4Gi = 4GB)
+redis_cluster_memory = "12Gi" # Memory limit per node (t3.xlarge has 16GB RAM)
 
 # Redis Enterprise Image Version (must match operator version)
-redis_enterprise_version_tag = "7.4.6-22" # Image tag for Redis Enterprise 7.4.6
+# Check latest builds at: https://hub.docker.com/r/redislabs/redis/tags?name=8.0.2
+redis_enterprise_version_tag = "8.0.2-41" # Latest build (Stable: 7.4.6-22)
 
 # Storage Configuration
 redis_cluster_storage_size  = "50Gi" # Persistent storage per node
@@ -90,6 +131,45 @@ redis_database_service_type = "ClusterIP"   # Default service type for databases
 
 # License (optional)
 # redis_license_secret_name = "redis-enterprise-license" # Kubernetes secret name with license
+
+#==============================================================================
+# REDIS FLEX (AUTO TIERING) CONFIGURATION
+#==============================================================================
+# ✨ FULLY AUTOMATED - Match this with your instance type choice above!
+#
+# Redis Flex: Automatic tiering between RAM (hot data) and flash (warm/cold data)
+# • 70-80% cost savings vs RAM-only for large datasets
+# • Automatic data tiering based on access patterns
+# • Hot data in RAM, warm/cold data on NVMe SSDs
+#
+# Documentation: https://redis.io/docs/latest/operate/kubernetes/re-clusters/redis-flex/
+#
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │ OPTION 1: RAM-ONLY MODE (Default)                                       │
+# │ ✓ Active by default                                                     │
+# │ ✓ Matches t3.xlarge instance type above                                 │
+# └─────────────────────────────────────────────────────────────────────────┘
+
+enable_redis_flex           = false  # RAM-only mode
+sample_db_enable_redis_flex = false  # Sample DB uses RAM only
+sample_db_memory            = "100MB" # RAM-only: 100MB total
+
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │ OPTION 2: REDIS FLEX MODE (Uncomment ALL lines below)                   │
+# │ ✓ Uncomment these settings AND i3.2xlarge instance type above           │
+# │ ✓ Everything else is automated (NVMe discovery, storage, etc.)          │
+# └─────────────────────────────────────────────────────────────────────────┘
+
+# ⚙️  Cluster-level Redis Flex configuration
+# enable_redis_flex              = true         # ENABLE Redis Flex
+# redis_flex_storage_class       = "local-scsi" # NVMe storage class (auto-created)
+# redis_flex_flash_disk_size     = "800G"       # Flash per node (~1.7TB max for i3.2xlarge)
+# redis_flex_storage_driver      = "speedb"     # speedb (recommended) or rocksdb
+
+# 💾 Sample database Redis Flex configuration
+# sample_db_enable_redis_flex    = true         # Enable Flex for sample DB
+# sample_db_rof_ram_size         = "12GB"       # RAM size (must be ≥10% of total memory)
+# sample_db_memory               = "120GB"      # Total: 12GB RAM + 108GB Flash
 
 #==============================================================================
 # EXTERNAL ACCESS VIA INGRESS (Optional - Disabled by default)
@@ -114,9 +194,22 @@ redis_enable_ingress = false
 create_sample_database = true     # Create a demo database for testing
 sample_db_name         = "demo"   # Database name
 sample_db_port         = 12000    # Database port (10000-19999)
-sample_db_memory       = "100MB"  # Memory size (100MB, 1GB, etc.)
+# sample_db_memory is set above in Redis Flex config section (100MB or 120GB)
 sample_db_replication  = true     # Enable HA replication (default: enabled)
 sample_db_password     = "admin"  # Database password (alphanumeric only)
+
+#==============================================================================
+# REDIS TEST CLIENT (Optional - For testing connectivity & performance)
+#==============================================================================
+
+# Deploy test client pod with redis-cli, redis-benchmark, and memtier_benchmark
+create_test_client = false # Set to true to deploy test client pod
+
+# Test client resource sizing (t3.micro equivalent: 1 vCPU, 1GB RAM)
+# test_client_cpu_request    = "500m"  # CPU request (default)
+# test_client_cpu_limit      = "1000m" # CPU limit (default)
+# test_client_memory_request = "512Mi" # Memory request (default)
+# test_client_memory_limit   = "1Gi"   # Memory limit (default)
 
 # Service Type for Sample Database
 sample_db_service_type = "ClusterIP" # ClusterIP (internal) or LoadBalancer (external)
@@ -227,14 +320,21 @@ tags = {
 # 📊 RESOURCE REQUIREMENTS
 #==============================================================================
 #
-# Minimum cluster requirements:
+# STANDARD (default configuration):
 # • 3 worker nodes (for Redis Enterprise HA)
 # • t3.xlarge instances (4 vCPU, 16GB RAM each)
 # • 100GB EBS storage per node
 # • Total: ~48GB RAM, 12 vCPUs, 300GB storage
 #
+# REDIS FLEX (when enabled):
+# • 3 worker nodes (for Redis Enterprise HA)
+# • i3.xlarge instances (4 vCPU, 30.5GB RAM, 950GB NVMe SSD each)
+# • 100GB EBS storage per node (for OS/system)
+# • Total: ~91.5GB RAM, 12 vCPUs, 2850GB NVMe flash storage
+#
 # For production:
-# • Consider r6i.xlarge or larger (memory-optimized)
+# • Standard: r6i.xlarge or larger (memory-optimized)
+# • Redis Flex: i3.2xlarge or i4i.2xlarge (more RAM + flash)
 # • Increase storage based on data size
 # • Add more nodes for higher capacity
 #
@@ -242,12 +342,19 @@ tags = {
 # 💰 ESTIMATED COSTS
 #==============================================================================
 #
-# Approximate monthly costs (us-west-2):
+# STANDARD (t3.xlarge - default):
 # • EKS control plane: ~$73/month
-# • 3x t3.xlarge nodes: ~$300/month
+# • 3x t3.xlarge nodes: ~$300/month (~$0.156/hr each)
 # • EBS gp3 storage (300GB): ~$25/month
 # • Data transfer: Variable
 # • Total: ~$400-500/month for dev/test
+#
+# REDIS FLEX (i3.xlarge - when enabled):
+# • EKS control plane: ~$73/month
+# • 3x i3.xlarge nodes: ~$675/month (~$0.312/hr each)
+# • EBS gp3 storage (300GB): ~$25/month
+# • Data transfer: Variable
+# • Total: ~$775-825/month for dev/test
 #
 # Remember to run `terraform destroy` when done testing!
 #

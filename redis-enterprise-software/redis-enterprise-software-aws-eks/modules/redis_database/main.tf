@@ -18,6 +18,7 @@ resource "kubectl_manifest" "redis_database" {
 
       # Database size
       memorySize: ${var.memory_size}
+${var.enable_redis_flex ? "\n      # Redis Flex (Auto Tiering) configuration\n      isRof: true\n      rofRamSize: ${var.rof_ram_size}" : ""}
 
       # Database type
       databaseType: redis

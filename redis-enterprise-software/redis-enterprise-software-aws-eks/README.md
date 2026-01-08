@@ -2,6 +2,16 @@
 
 Deploy a production-ready Redis Enterprise Software cluster on Amazon EKS (Elastic Kubernetes Service) with automated operator deployment, persistent storage, and high availability across availability zones.
 
+## 🔥 **NEW: Redis Flex (Auto Tiering) Support**
+
+**Want to store TBs of data at a fraction of the cost?** See **[REDIS-FLEX-DEPLOYMENT.md](REDIS-FLEX-DEPLOYMENT.md)** for complete Redis Flex deployment guide.
+
+Redis Flex automatically tiers data between RAM and flash storage (NVMe SSDs):
+- 💰 **70-80% cost savings** vs all-RAM configuration
+- 📈 **Store more data** using flash as RAM extension
+- 🚀 **Automatic tiering** based on access patterns
+- 🔧 **Simple deployment** with automated script: `./deploy-redis-flex.sh`
+
 ## 🚀 Quick Start
 
 ### 1. Prerequisites
@@ -509,6 +519,127 @@ Apply it:
 ```bash
 kubectl apply -f my-database.yaml
 ```
+
+## 💾 Redis Flex (Auto Tiering) - Optional
+
+Redis Flex (also called Auto Tiering) enables automatic tiering of data between RAM and flash storage (NVMe SSDs), allowing you to store more data at lower cost by extending Redis beyond RAM.
+
+### What is Redis Flex?
+
+- **Automatic Tiering**: Frequently accessed data stays in RAM, less-accessed data moves to flash
+- **Cost Savings**: Flash storage is significantly cheaper than RAM
+- **Transparent**: Applications use standard Redis commands - tiering is automatic
+- **Performance**: Hot data in RAM maintains performance, warm/cold data on flash
+
+### Requirements
+
+**IMPORTANT**: Redis Flex requires **local NVMe SSDs** attached to EC2 instances. Standard EBS volumes (gp3, gp2, io1, etc.) **do NOT work**.
+
+1. **EC2 Instance Types with Local NVMe SSDs**:
+   - **i3 family**: i3.xlarge, i3.2xlarge, i3.4xlarge, i3.8xlarge
+   - **i4i family**: i4i.xlarge, i4i.2xlarge, i4i.4xlarge, i4i.8xlarge (AWS Nitro)
+   - **Storage**: Check instance specs for NVMe SSD capacity
+
+2. **Local Storage Class**: Configure Kubernetes to use local NVMe devices
+
+3. **Redis Enterprise 7.2.4+**: Redis Flex support built-in
+
+### Configuration
+
+To enable Redis Flex, update `terraform.tfvars`:
+
+```hcl
+#==============================================================================
+# EC2 Instance Type with Local NVMe SSDs
+#==============================================================================
+node_instance_types = ["i3.xlarge"]  # Change from t3.xlarge to i3.xlarge
+
+#==============================================================================
+# Redis Flex Configuration
+#==============================================================================
+enable_redis_flex           = true         # Enable Redis Flex at cluster level
+redis_flex_storage_class    = "local-scsi" # Storage class for NVMe devices
+redis_flex_flash_disk_size  = "100G"       # Flash disk size per node
+redis_flex_storage_driver   = "speedb"     # speedb (recommended) or rocksdb
+
+# Enable for specific databases
+sample_db_enable_redis_flex = true         # Enable for sample database
+sample_db_rof_ram_size      = "10GB"       # RAM size (min 10% of total memory)
+```
+
+### Creating a Redis Flex Database
+
+Create a database with Redis Flex enabled:
+
+```yaml
+apiVersion: app.redislabs.com/v1alpha1
+kind: RedisEnterpriseDatabase
+metadata:
+  name: my-flex-db
+  namespace: redis-enterprise
+spec:
+  redisEnterpriseCluster:
+    name: redis-ent-eks
+  memorySize: 100GB        # Total memory (RAM + Flash)
+  isRof: true              # Enable Redis Flex
+  rofRamSize: 10GB         # RAM size (minimum 10% of memorySize)
+  databasePort: 12002
+  replication: true
+  persistence: aofEverySecond
+  databaseServiceType: ClusterIP
+```
+
+In this example:
+- **Total capacity**: 100GB (10GB RAM + 90GB Flash)
+- **Hot data**: Up to 10GB stays in RAM for fast access
+- **Warm/cold data**: Up to 90GB automatically tiered to flash
+- **Cost savings**: ~75% reduction vs 100GB all-RAM
+
+### Setting Up Local NVMe Storage
+
+Before enabling Redis Flex, you need to configure local storage on your EKS worker nodes:
+
+1. **Create a local storage provisioner** (e.g., using [sig-storage-local-static-provisioner](https://github.com/kubernetes-sigs/sig-storage-local-static-provisioner))
+
+2. **Create a StorageClass for local NVMe**:
+   ```yaml
+   apiVersion: storage.k8s.io/v1
+   kind: StorageClass
+   metadata:
+     name: local-scsi
+   provisioner: kubernetes.io/no-provisioner
+   volumeBindingMode: WaitForFirstConsumer
+   ```
+
+3. **Discover and mount NVMe devices** on each worker node
+
+### Verifying Redis Flex
+
+```bash
+# Check cluster has Redis Flex enabled
+kubectl describe rec redis-ent-eks -n redis-enterprise | grep -A 5 redisOnFlashSpec
+
+# Check database is using Redis Flex
+kubectl get redb my-flex-db -n redis-enterprise -o yaml | grep -A 2 "isRof\|rofRamSize"
+
+# Monitor memory/flash usage via Redis Enterprise UI
+kubectl port-forward -n redis-enterprise svc/redis-ent-eks-ui 8443:8443
+# Access: https://localhost:8443
+```
+
+### Important Notes
+
+- **Cannot use EBS**: Redis Flex requires local NVMe SSDs, not network-attached storage
+- **Instance costs**: i3/i4i instances are more expensive than t3 instances
+- **Storage ephemeral**: Local NVMe data is lost if instance terminates (use replication + persistence)
+- **No PVC expansion**: Cannot resize PVCs when Redis Flex is enabled
+- **RAM minimum**: `rofRamSize` must be at least 10% of total `memorySize`
+
+### Documentation
+
+- [Redis Flex on Kubernetes](https://redis.io/docs/latest/operate/kubernetes/re-clusters/redis-flex/)
+- [Redis on Flash Overview](https://redis.io/blog/redis-enterprise-flash/)
+- [AWS EC2 Instance Types with NVMe](https://aws.amazon.com/ec2/instance-types/)
 
 ## 🚨 Troubleshooting
 
