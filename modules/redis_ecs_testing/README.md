@@ -202,7 +202,8 @@ aws ecs update-service \
 - Terraform >= 1.0
 - AWS Provider >= 5.0
 - Redis endpoints must be accessible from ECS tasks
-- VPC must have private subnets with NAT Gateway for image pulls
+- VPC must have public subnets with Internet Gateway for pulling Docker images and accessing CloudWatch
+- Tasks are assigned public IPs automatically for AWS service access (CloudWatch Logs, ECR)
 
 ## License
 

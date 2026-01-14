@@ -260,7 +260,7 @@ module "ecs_testing" {
   vpc_config = {
     (var.aws_region) = {
       vpc_id     = module.vpc.vpc_id
-      subnet_ids = module.vpc.private_subnet_ids
+      subnet_ids = module.vpc.public_subnet_ids  # Same subnets as Redis cluster
     }
   }
 

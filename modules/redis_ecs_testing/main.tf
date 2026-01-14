@@ -228,7 +228,7 @@ resource "aws_ecs_service" "redis_test" {
   network_configuration {
     subnets          = var.vpc_config[each.key].subnet_ids
     security_groups  = [aws_security_group.ecs_tasks[each.key].id]
-    assign_public_ip = false # Using private subnets
+    assign_public_ip = true # Required for public subnets to access AWS services (CloudWatch, ECR)
   }
 
   # Enable CloudWatch Container Insights
