@@ -67,7 +67,7 @@ module "ecs_testing" {
 }
 ```
 
-### Custom Test Command
+### With Redis Authentication
 
 ```hcl
 module "ecs_testing" {
@@ -75,14 +75,126 @@ module "ecs_testing" {
 
   # ... basic config ...
 
-  custom_command = [
-    "sh", "-c",
-    "python3 /app/custom_test.py"
-  ]
-
-  test_container_image = "mycompany/redis-test-app:latest"
+  redis_password = var.redis_password  # From your tfvars
 }
 ```
+
+### Custom Application with Environment Variables
+
+```hcl
+module "ecs_testing" {
+  source = "../../modules/redis_ecs_testing"
+
+  # ... basic config ...
+
+  test_container_image = "<ACCOUNT>.dkr.ecr.us-west-2.amazonaws.com/my-redis-app:latest"
+
+  app_environment = {
+    OPERATIONS_PER_SECOND = "500"
+    KEY_PREFIX            = "myapp"
+    REPORT_INTERVAL       = "30"
+    MY_CUSTOM_VAR         = "custom_value"
+  }
+}
+```
+
+## Example Application
+
+This module includes a **ready-to-use Python application** in `example_app/` that demonstrates how to build custom test applications.
+
+### Quick Start with Example App
+
+1. **Build the Docker image:**
+   ```bash
+   cd modules/redis_ecs_testing/example_app
+   docker build -t redis-test-app .
+   ```
+
+2. **Test locally (optional):**
+   ```bash
+   docker run -e REDIS_HOST=localhost -e REDIS_PORT=6379 redis-test-app
+   ```
+
+3. **Push to ECR:**
+   ```bash
+   # Create repository (one-time)
+   aws ecr create-repository --repository-name redis-test-app --region us-west-2
+
+   # Login and push
+   aws ecr get-login-password --region us-west-2 | \
+     docker login --username AWS --password-stdin <ACCOUNT>.dkr.ecr.us-west-2.amazonaws.com
+
+   docker tag redis-test-app:latest <ACCOUNT>.dkr.ecr.us-west-2.amazonaws.com/redis-test-app:latest
+   docker push <ACCOUNT>.dkr.ecr.us-west-2.amazonaws.com/redis-test-app:latest
+   ```
+
+4. **Use in Terraform:**
+   ```hcl
+   module "ecs_testing" {
+     source = "../../modules/redis_ecs_testing"
+
+     redis_endpoints = {
+       us-west-2 = { host = "my-redis.example.com", port = 12000 }
+     }
+
+     vpc_config = {
+       us-west-2 = { vpc_id = "vpc-xxx", subnet_ids = ["subnet-aaa"] }
+     }
+
+     cluster_prefix       = "myapp-test"
+     test_container_image = "<ACCOUNT>.dkr.ecr.us-west-2.amazonaws.com/redis-test-app:latest"
+     redis_password       = var.redis_password  # Optional
+
+     app_environment = {
+       OPERATIONS_PER_SECOND = "100"
+       KEY_PREFIX            = "myapp"
+     }
+   }
+   ```
+
+### Creating Your Own Application
+
+The example app (`example_app/app.py`) is designed as a template. To create your own:
+
+1. **Copy the example:**
+   ```bash
+   cp -r modules/redis_ecs_testing/example_app my-app
+   ```
+
+2. **Modify `app.py`** - Replace the example operations with your logic:
+   ```python
+   def do_write(self):
+       # Your write logic here
+       self.client.hset("user:123", mapping={"name": "John", "visits": 1})
+
+   def do_read(self):
+       # Your read logic here
+       return self.client.hgetall("user:123")
+   ```
+
+3. **Environment variables available to your app:**
+
+   | Variable | Source | Description |
+   |----------|--------|-------------|
+   | `REDIS_HOST` | Module | Redis endpoint hostname |
+   | `REDIS_PORT` | Module | Redis endpoint port |
+   | `REDIS_PASSWORD` | Module | Redis AUTH password |
+   | `REDIS_REGION` | Module | AWS region |
+   | `TEST_MODE` | Module | ping/read/write/mixed |
+   | Custom vars | `app_environment` | Your custom variables |
+
+4. **Build and deploy** your modified image to ECR
+
+### Example App Features
+
+The included example application supports:
+
+- **Multiple test modes:** ping, read, write, mixed, complex
+- **Configurable throughput:** Set `OPERATIONS_PER_SECOND`
+- **Pipeline operations:** Demonstrates efficient batching
+- **Statistics reporting:** Logs ops/sec to CloudWatch
+- **Graceful shutdown:** Handles SIGTERM from ECS
+- **Error handling:** Backs off on connection errors
 
 ## Inputs
 
@@ -91,6 +203,8 @@ module "ecs_testing" {
 | redis_endpoints | Map of region to Redis endpoint | map(object) | - | yes |
 | vpc_config | VPC configuration per region | map(object) | - | yes |
 | cluster_prefix | Prefix for resource names | string | - | yes |
+| redis_password | Redis AUTH password | string | null | no |
+| app_environment | Custom env vars for containers | map(string) | {} | no |
 | task_cpu | CPU units for task | number | 256 | no |
 | task_memory | Memory in MB | number | 512 | no |
 | default_task_count | Initial task count | number | 0 | no |

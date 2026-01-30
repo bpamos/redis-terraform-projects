@@ -147,34 +147,38 @@ resource "aws_ecs_task_definition" "redis_client" {
 
   family                   = "${var.cluster_prefix}-redis-client-${each.key}"
   requires_compatibilities = ["FARGATE"]
-  network_mode            = "awsvpc"
-  cpu                     = var.task_cpu
-  memory                  = var.task_memory
-  execution_role_arn      = aws_iam_role.ecs_task_execution.arn
-  task_role_arn           = aws_iam_role.ecs_task.arn
+  network_mode             = "awsvpc"
+  cpu                      = var.task_cpu
+  memory                   = var.task_memory
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
 
   container_definitions = jsonencode([{
     name  = "redis-client"
     image = var.test_container_image
 
-    environment = [
-      {
-        name  = "REDIS_HOST"
-        value = each.value.host
-      },
-      {
-        name  = "REDIS_PORT"
-        value = tostring(each.value.port)
-      },
-      {
-        name  = "REDIS_REGION"
-        value = each.key
-      },
-      {
-        name  = "TEST_MODE"
-        value = var.test_mode
-      }
-    ]
+    environment = concat(
+      [
+        {
+          name  = "REDIS_HOST"
+          value = each.value.host
+        },
+        {
+          name  = "REDIS_PORT"
+          value = tostring(each.value.port)
+        },
+        {
+          name  = "REDIS_REGION"
+          value = each.key
+        },
+        {
+          name  = "TEST_MODE"
+          value = var.test_mode
+        }
+      ],
+      var.redis_password != null ? [{ name = "REDIS_PASSWORD", value = var.redis_password }] : [],
+      [for k, v in var.app_environment : { name = k, value = v }]
+    )
 
     # Default command: continuous PING test
     command = var.custom_command != null ? var.custom_command : [
@@ -258,11 +262,11 @@ resource "aws_ecs_task_definition" "redis_load_test" {
 
   family                   = "${var.cluster_prefix}-redis-load-test"
   requires_compatibilities = ["FARGATE"]
-  network_mode            = "awsvpc"
-  cpu                     = var.load_test_task_cpu
-  memory                  = var.load_test_task_memory
-  execution_role_arn      = aws_iam_role.ecs_task_execution.arn
-  task_role_arn           = aws_iam_role.ecs_task.arn
+  network_mode             = "awsvpc"
+  cpu                      = var.load_test_task_cpu
+  memory                   = var.load_test_task_memory
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
 
   container_definitions = jsonencode([{
     name  = "redis-benchmark"

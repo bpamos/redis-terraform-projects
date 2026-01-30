@@ -113,6 +113,19 @@ variable "custom_command" {
   default     = null
 }
 
+variable "redis_password" {
+  description = "Redis AUTH password (optional). Set this if your Redis endpoint requires authentication."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "app_environment" {
+  description = "Additional environment variables to pass to containers (e.g., OPERATIONS_PER_SECOND, KEY_PREFIX)"
+  type        = map(string)
+  default     = {}
+}
+
 # =============================================================================
 # OPTIONAL VARIABLES - Load Testing
 # =============================================================================

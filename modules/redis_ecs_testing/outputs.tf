@@ -116,15 +116,15 @@ output "quick_start" {
 
     🚀 Scale Up for Testing:
        ${join("\n       ", [for region, cmd in {
-    for region, cluster in aws_ecs_cluster.redis_test :
-    region => "aws ecs update-service --cluster ${cluster.name} --service ${aws_ecs_service.redis_test[region].name} --desired-count 10 --region ${region}"
+  for region, cluster in aws_ecs_cluster.redis_test :
+  region => "aws ecs update-service --cluster ${cluster.name} --service ${aws_ecs_service.redis_test[region].name} --desired-count 10 --region ${region}"
   } : cmd])}
 
     📉 Scale Down (Stop Costs):
        ${join("\n       ", [for region, cmd in {
-    for region, cluster in aws_ecs_cluster.redis_test :
-    region => "aws ecs update-service --cluster ${cluster.name} --service ${aws_ecs_service.redis_test[region].name} --desired-count 0 --region ${region}"
-  } : cmd])}
+  for region, cluster in aws_ecs_cluster.redis_test :
+  region => "aws ecs update-service --cluster ${cluster.name} --service ${aws_ecs_service.redis_test[region].name} --desired-count 0 --region ${region}"
+} : cmd])}
 
     📋 View Logs:
        ${join("\n       ", [for region, log_group in aws_cloudwatch_log_group.redis_test : "aws logs tail ${log_group.name} --follow --region ${region}"])}
