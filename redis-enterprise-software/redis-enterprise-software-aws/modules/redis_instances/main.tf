@@ -111,11 +111,6 @@ resource "aws_instance" "redis_enterprise_nodes" {
   lifecycle {
     create_before_destroy = true
   }
-
-  # Wait for instance to be ready before moving to next resource
-  depends_on = [
-    # No specific dependencies - pure infrastructure
-  ]
 }
 
 # =============================================================================

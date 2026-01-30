@@ -98,9 +98,4 @@ resource "null_resource" "redis_enterprise_installation" {
       timeout     = "15m"
     }
   }
-
-  # Dependencies - must wait for storage volumes to be attached
-  depends_on = [
-    # Storage volumes must be attached before installation
-  ]
 }

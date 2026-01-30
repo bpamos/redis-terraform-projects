@@ -44,6 +44,7 @@ module "security_group" {
 
   name_prefix    = local.name_prefix
   vpc_id         = module.vpc.vpc_id
+  vpc_cidr       = var.vpc_cidr
   allow_ssh_from = var.allow_ssh_from
 
   owner   = var.owner
@@ -212,23 +213,26 @@ module "database_management" {
 }
 
 # =============================================================================
-# TEST/CLIENT NODE
+# BASTION/TEST NODE
 # =============================================================================
 
-module "test_node" {
-  count  = var.enable_test_node ? 1 : 0
-  source = "./modules/test_node"
+module "bastion" {
+  count  = var.enable_bastion ? 1 : 0
+  source = "../../modules/ec2_bastion"
 
-  name_prefix          = local.name_prefix
-  instance_type        = var.test_node_instance_type
-  subnet_id            = module.vpc.public_subnet_ids[0]
-  security_group_id    = module.security_group.test_node_sg_id
-  key_name             = var.key_name
-  ssh_private_key_path = var.ssh_private_key_path
+  name_prefix   = local.name_prefix
+  instance_type = var.bastion_instance_type
+  subnet_id     = module.vpc.public_subnet_ids[0]
+  vpc_id        = module.vpc.vpc_id
+  key_name      = var.key_name
 
-  # Redis connection info (for testing)
-  redis_endpoint = var.create_sample_database ? "redis-${var.sample_db_port}-internal.${local.name_prefix}.${data.aws_route53_zone.main.name}:${var.sample_db_port}" : ""
-  redis_password = ""
+  # Redis connection info (for testing) - uses actual endpoint from database module
+  redis_endpoints = var.create_sample_database ? {
+    sample_db = {
+      endpoint = "${module.database_management.sample_database_endpoint_private}:${var.sample_db_port}"
+      password = ""
+    }
+  } : {}
 
   owner   = var.owner
   project = var.project
@@ -236,53 +240,41 @@ module "test_node" {
 }
 
 # =============================================================================
-# OPTIONAL: ECS TESTING INFRASTRUCTURE
-# =============================================================================
-# Creates ECS Fargate clusters for load testing and application simulation
-# Scaled to 0 by default (no cost) - scale up when testing
-# Set enable_ecs_testing = true in terraform.tfvars to use
+# MONITORING LAYER - PROMETHEUS AND GRAFANA
 # =============================================================================
 
-module "ecs_testing" {
-  count  = var.enable_ecs_testing && var.create_sample_database ? 1 : 0
-  source = "../../modules/redis_ecs_testing"
+module "monitoring" {
+  count  = var.enable_bastion && var.enable_monitoring ? 1 : 0
+  source = "../../modules/redis_enterprise_monitoring"
 
-  # Auto-wire Redis endpoint for this region
-  redis_endpoints = {
-    (var.aws_region) = {
-      # Endpoint is hostname only, port is from sample_db_port variable
-      host = module.database_management.sample_database_endpoint
-      port = var.sample_db_port
-    }
-  }
+  # Bastion connection (monitoring runs on bastion host)
+  bastion_public_ip    = module.bastion[0].public_ip
+  bastion_private_ip   = module.bastion[0].private_ip
+  ssh_private_key_path = var.ssh_private_key_path
+  ssh_user             = "ubuntu"
 
-  # Auto-wire VPC configuration for this region
-  vpc_config = {
-    (var.aws_region) = {
-      vpc_id     = module.vpc.vpc_id
-      subnet_ids = module.vpc.public_subnet_ids  # Same subnets as Redis cluster
-    }
-  }
+  # Redis Enterprise cluster details
+  redis_cluster_fqdn     = module.cluster_bootstrap.cluster_fqdn
+  redis_cluster_nodes    = module.redis_instances.private_ips
+  redis_cluster_username = var.cluster_username
+  redis_cluster_password = var.cluster_password
 
-  # Naming
-  cluster_prefix = local.name_prefix
+  # Security group for Grafana/Prometheus ports
+  bastion_security_group_id = module.bastion[0].security_group_id
+  grafana_allowed_cidrs     = var.allow_ssh_from
 
-  # Optional: Customize testing configuration
-  default_task_count        = var.ecs_default_task_count
-  enable_load_testing       = var.ecs_enable_load_testing
-  enable_container_insights = var.ecs_enable_container_insights
-  test_container_image      = var.ecs_test_container_image
+  # Grafana configuration
+  grafana_admin_password   = var.grafana_admin_password
+  grafana_anonymous_access = var.grafana_anonymous_access
+
+  # Prometheus configuration
+  prometheus_retention_days = var.prometheus_retention_days
 
   # Tags
-  tags = merge(
-    var.tags,
-    {
-      Component = "ECS Testing Infrastructure"
-    }
-  )
+  name_prefix = local.name_prefix
+  owner       = var.owner
+  project     = var.project
+  tags        = var.tags
 
-  # Ensure database is ready before creating ECS testing
-  depends_on = [
-    module.database_management
-  ]
+  depends_on = [module.bastion, module.cluster_bootstrap]
 }

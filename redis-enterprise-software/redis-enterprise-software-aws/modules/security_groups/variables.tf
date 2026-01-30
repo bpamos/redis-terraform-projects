@@ -8,6 +8,11 @@ variable "vpc_id" {
   type        = string
 }
 
+variable "vpc_cidr" {
+  description = "VPC CIDR block for internal traffic rules"
+  type        = string
+}
+
 variable "allow_ssh_from" {
   description = "List of CIDRs allowed to SSH and access Redis Enterprise UI"
   type        = list(string)

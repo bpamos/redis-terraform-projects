@@ -73,11 +73,6 @@ resource "null_resource" "create_cluster" {
       timeout     = "10m"
     }
   }
-
-  # Must wait for Redis Enterprise installation on primary node
-  depends_on = [
-    # Installation must complete before cluster creation
-  ]
 }
 
 # =============================================================================

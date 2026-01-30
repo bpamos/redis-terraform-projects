@@ -62,15 +62,14 @@ variable "tags" {
   default     = {}
 }
 
-# Legacy variables for backward compatibility
 variable "owner" {
-  description = "Owner tag (legacy - use tags variable instead)"
+  description = "Owner tag for resources"
   type        = string
   default     = ""
 }
 
 variable "project" {
-  description = "Project tag (legacy - use tags variable instead)"
+  description = "Project name tag for resources"
   type        = string
   default     = ""
 }

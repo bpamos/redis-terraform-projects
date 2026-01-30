@@ -107,7 +107,7 @@ resource "aws_security_group" "redis_enterprise" {
     self            = true
   }
 
-  # Redis Enterprise metrics exporter and additional cluster communication
+  # Redis Enterprise metrics exporter and additional cluster communication (inter-node)
   ingress {
     description     = "Redis Enterprise metrics and cluster communication"
     from_port       = 8070
@@ -115,6 +115,15 @@ resource "aws_security_group" "redis_enterprise" {
     protocol        = "tcp"
     security_groups = []
     self            = true
+  }
+
+  # Redis Enterprise metrics exporter (for Prometheus scraping from within VPC)
+  ingress {
+    description = "Redis Enterprise Prometheus metrics endpoint"
+    from_port   = 8070
+    to_port     = 8070
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
   }
 
   # Redis Enterprise internal proxy
@@ -133,7 +142,7 @@ resource "aws_security_group" "redis_enterprise" {
     from_port   = 10000
     to_port     = 19999
     protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/16"] # Allow within VPC
+    cidr_blocks = [var.vpc_cidr]
   }
 
   # Redis database ports for external access
@@ -188,45 +197,6 @@ resource "aws_security_group" "redis_enterprise" {
       Owner   = var.owner
       Project = var.project
       Type    = "Redis-Enterprise-SecurityGroup"
-    },
-    var.tags
-  )
-}
-
-# =============================================================================
-# TEST NODE SECURITY GROUP
-# =============================================================================
-
-# Security group for test/client node
-resource "aws_security_group" "test_node" {
-  name_prefix = "${var.name_prefix}-test-node-sg"
-  description = "Security group for Redis test/client node"
-  vpc_id      = var.vpc_id
-
-  # SSH access
-  ingress {
-    description = "SSH access"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = var.allow_ssh_from
-  }
-
-  # All outbound traffic
-  egress {
-    description = "All outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = merge(
-    {
-      Name    = "${var.name_prefix}-test-node-sg"
-      Owner   = var.owner
-      Project = var.project
-      Type    = "Test-Node-SecurityGroup"
     },
     var.tags
   )

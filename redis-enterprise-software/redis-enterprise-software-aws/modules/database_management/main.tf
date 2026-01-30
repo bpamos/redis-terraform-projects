@@ -72,11 +72,6 @@ resource "null_resource" "sample_database" {
       timeout     = "5m"
     }
   }
-
-  # Must wait for cluster to be fully bootstrapped
-  depends_on = [
-    # Cluster verification must complete before database creation
-  ]
 }
 
 # =============================================================================

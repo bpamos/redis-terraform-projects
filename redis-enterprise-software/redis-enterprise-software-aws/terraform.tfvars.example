@@ -92,15 +92,26 @@ sample_db_port        = 12000    # Database port (10000-19999)
 sample_db_memory      = 100      # Memory size in MB
 
 #==============================================================================
-# ECS TESTING INFRASTRUCTURE (Optional - Off by default, no cost)
+# BASTION HOST CONFIGURATION (Optional - Enabled by default)
 #==============================================================================
 
-# ECS Fargate Testing
-enable_ecs_testing            = false          # Enable ECS-based load testing (off by default)
-ecs_default_task_count        = 0              # Initial task count (0 = no cost)
-ecs_enable_load_testing       = false          # Enable redis-benchmark task definitions
-ecs_enable_container_insights = true           # Enable CloudWatch Container Insights
-ecs_test_container_image      = "redis:latest" # Docker image for testing (must have redis-cli)
+enable_bastion        = true      # Create bastion host for testing
+bastion_instance_type = "t3.small" # Bastion instance type
+
+#==============================================================================
+# MONITORING CONFIGURATION - Prometheus & Grafana (Optional)
+#==============================================================================
+# When enabled, installs Prometheus and Grafana on the bastion host
+# with pre-configured Redis Enterprise dashboards
+
+enable_monitoring         = true     # Prometheus + Grafana on bastion host
+grafana_admin_password    = ""       # Leave empty for auto-generated password
+grafana_anonymous_access  = true     # Allow anonymous dashboard viewing
+prometheus_retention_days = 15       # Days to retain metrics data
+
+# After enabling, access:
+# • Grafana:    http://<bastion-ip>:3000 (dashboards pre-configured)
+# • Prometheus: http://<bastion-ip>:9090 (metrics explorer)
 
 #==============================================================================
 # RESOURCE TAGGING (Optional - Customize as needed)

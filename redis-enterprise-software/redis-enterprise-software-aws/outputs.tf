@@ -181,32 +181,45 @@ output "cluster_credentials" {
 }
 
 # =============================================================================
-# TEST NODE INFORMATION
+# BASTION/TEST NODE INFORMATION
 # =============================================================================
 
-output "test_node_info" {
-  description = "Test node information"
-  value = var.enable_test_node ? {
-    instance_id = module.test_node[0].instance_id
-    public_ip   = module.test_node[0].public_ip
-    private_ip  = module.test_node[0].private_ip
-    ssh_command = module.test_node[0].ssh_command
+output "bastion_info" {
+  description = "Bastion/test node information"
+  value = var.enable_bastion ? {
+    instance_id = module.bastion[0].instance_id
+    public_ip   = module.bastion[0].public_ip
+    private_ip  = module.bastion[0].private_ip
+    ssh_command = module.bastion[0].ssh_command
   } : null
 }
 
 # =============================================================================
-# OPTIONAL: ECS TESTING INFRASTRUCTURE OUTPUTS
+# MONITORING OUTPUTS (Prometheus + Grafana)
 # =============================================================================
 
-output "ecs_testing" {
-  description = "ECS testing infrastructure (only if enabled)"
-  value = var.enable_ecs_testing ? {
-    clusters            = module.ecs_testing[0].cluster_names
-    services            = module.ecs_testing[0].service_names
-    scale_up_commands   = module.ecs_testing[0].scale_up_commands
-    scale_down_commands = module.ecs_testing[0].scale_down_commands
-    view_logs_commands  = module.ecs_testing[0].view_logs_commands
-    quick_start         = module.ecs_testing[0].quick_start
-    cost_info           = module.ecs_testing[0].cost_info
+output "monitoring_info" {
+  description = "Prometheus and Grafana monitoring information"
+  value = var.enable_bastion && var.enable_monitoring ? {
+    grafana_url            = module.monitoring[0].grafana_url
+    prometheus_url         = module.monitoring[0].prometheus_url
+    grafana_admin_user     = module.monitoring[0].grafana_admin_user
+    redis_metrics_endpoint = module.monitoring[0].redis_metrics_endpoint
+    installed_dashboards   = module.monitoring[0].installed_dashboards
+  } : null
+}
+
+output "grafana_credentials" {
+  description = "Grafana login credentials"
+  value       = var.enable_bastion && var.enable_monitoring ? module.monitoring[0].grafana_credentials : null
+  sensitive   = true
+}
+
+output "monitoring_urls" {
+  description = "Quick access URLs for monitoring"
+  value = var.enable_bastion && var.enable_monitoring ? {
+    grafana_dashboards = "${module.monitoring[0].grafana_url}/dashboards"
+    prometheus_targets = "${module.monitoring[0].prometheus_url}/targets"
+    prometheus_graph   = "${module.monitoring[0].prometheus_url}/graph"
   } : null
 }

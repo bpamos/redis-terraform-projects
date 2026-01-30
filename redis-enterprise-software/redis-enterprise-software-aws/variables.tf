@@ -342,19 +342,53 @@ variable "sample_db_memory" {
 }
 
 # =============================================================================
-# TEST NODE CONFIGURATION
+# BASTION/TEST NODE CONFIGURATION
 # =============================================================================
 
-variable "enable_test_node" {
-  description = "Create a test node for Redis testing and benchmarking"
+variable "enable_bastion" {
+  description = "Create a bastion/test node for Redis testing and benchmarking"
   type        = bool
   default     = true
 }
 
-variable "test_node_instance_type" {
-  description = "Instance type for the test node"
+variable "bastion_instance_type" {
+  description = "Instance type for the bastion/test node"
   type        = string
   default     = "t3.small"
+}
+
+# =============================================================================
+# MONITORING CONFIGURATION (Prometheus + Grafana)
+# =============================================================================
+
+variable "enable_monitoring" {
+  description = "Enable Prometheus and Grafana monitoring on the bastion host"
+  type        = bool
+  default     = false
+}
+
+variable "grafana_admin_password" {
+  description = "Grafana admin password. If empty, a random password will be generated."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "grafana_anonymous_access" {
+  description = "Enable anonymous access to Grafana dashboards (read-only)"
+  type        = bool
+  default     = true
+}
+
+variable "prometheus_retention_days" {
+  description = "Number of days to retain Prometheus metrics data"
+  type        = number
+  default     = 15
+
+  validation {
+    condition     = var.prometheus_retention_days >= 1 && var.prometheus_retention_days <= 365
+    error_message = "Prometheus retention must be between 1 and 365 days."
+  }
 }
 
 # =============================================================================
@@ -365,43 +399,4 @@ variable "tags" {
   description = "Additional tags to apply to resources"
   type        = map(string)
   default     = {}
-}
-
-# =============================================================================
-# OPTIONAL: ECS TESTING INFRASTRUCTURE
-# =============================================================================
-
-variable "enable_ecs_testing" {
-  description = "Create ECS Fargate testing infrastructure for load testing and application simulation (off by default, no cost when disabled)"
-  type        = bool
-  default     = false
-}
-
-variable "ecs_default_task_count" {
-  description = "Default number of ECS tasks to run (0 = no cost)"
-  type        = number
-  default     = 0
-
-  validation {
-    condition     = var.ecs_default_task_count >= 0 && var.ecs_default_task_count <= 100
-    error_message = "ECS task count must be between 0 and 100."
-  }
-}
-
-variable "ecs_enable_load_testing" {
-  description = "Enable redis-benchmark task definition for load testing"
-  type        = bool
-  default     = false
-}
-
-variable "ecs_enable_container_insights" {
-  description = "Enable CloudWatch Container Insights for ECS clusters"
-  type        = bool
-  default     = true
-}
-
-variable "ecs_test_container_image" {
-  description = "Docker image for testing (must have redis-cli installed)"
-  type        = string
-  default     = "redis:latest"
 }
