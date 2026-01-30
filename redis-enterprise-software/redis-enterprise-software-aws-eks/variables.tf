@@ -396,6 +396,16 @@ variable "sample_db_password" {
   default     = ""
 }
 
+variable "sample_db_tls_mode" {
+  description = "TLS mode for sample database: 'disabled', 'enabled', or 'replica_ssl'. Required to be 'enabled' when using NGINX Ingress with enable_tls=true."
+  type        = string
+  default     = "disabled"
+  validation {
+    condition     = contains(["disabled", "enabled", "replica_ssl"], var.sample_db_tls_mode)
+    error_message = "TLS mode must be one of: disabled, enabled, replica_ssl."
+  }
+}
+
 #==============================================================================
 # REDIS TEST CLIENT CONFIGURATION
 #==============================================================================
@@ -440,6 +450,98 @@ variable "test_client_create_scripts" {
   description = "Create ConfigMap with helper test scripts"
   type        = bool
   default     = true
+}
+
+#==============================================================================
+# EXTERNAL ACCESS CONFIGURATION
+#==============================================================================
+
+variable "external_access_type" {
+  description = "Type of external access: 'nlb' (AWS Network Load Balancer), 'nginx-ingress' (NGINX Ingress Controller), or 'none' (internal only)"
+  type        = string
+  default     = "none"
+
+  validation {
+    condition     = contains(["nlb", "nginx-ingress", "none"], var.external_access_type)
+    error_message = "External access type must be 'nlb', 'nginx-ingress', or 'none'."
+  }
+}
+
+variable "expose_redis_ui" {
+  description = "Expose Redis Enterprise UI externally (requires external_access_type != 'none')"
+  type        = bool
+  default     = false
+}
+
+variable "expose_redis_databases" {
+  description = "Expose Redis databases externally (requires external_access_type != 'none')"
+  type        = bool
+  default     = false
+}
+
+# NGINX Ingress specific variables
+variable "ingress_domain" {
+  description = "Base domain for NGINX ingress when using nginx-ingress mode (e.g., redis.example.com)"
+  type        = string
+  default     = ""
+}
+
+variable "nginx_instance_count" {
+  description = "Number of NGINX ingress controller replicas (only used with nginx-ingress mode)"
+  type        = number
+  default     = 2
+}
+
+variable "enable_tls" {
+  description = "Enable TLS mode for NGINX Ingress (production). When true, requires TLS on Redis databases and uses SSL passthrough on port 443. When false (testing), uses direct port access without TLS."
+  type        = bool
+  default     = false
+}
+
+#==============================================================================
+# EC2 BASTION CONFIGURATION
+#==============================================================================
+
+variable "create_bastion" {
+  description = "Create EC2 bastion instance for Redis testing, troubleshooting, and admin tasks"
+  type        = bool
+  default     = false
+}
+
+variable "ec2_key_name" {
+  description = "SSH key pair name for EC2 bastion instance (must exist in AWS region)"
+  type        = string
+  default     = ""
+}
+
+variable "ssh_private_key_path" {
+  description = "Path to SSH private key file for bastion access"
+  type        = string
+  default     = ""
+}
+
+variable "bastion_instance_type" {
+  description = "EC2 instance type for bastion host"
+  type        = string
+  default     = "t3.small"
+}
+
+variable "bastion_associate_public_ip" {
+  description = "Associate public IP address with bastion instance"
+  type        = bool
+  default     = true
+}
+
+variable "bastion_ssh_cidr_blocks" {
+  description = "CIDR blocks allowed to SSH to bastion instance (0.0.0.0/0 = anywhere, restrict in production)"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "bastion_install_docker" {
+  description = "Install Docker on bastion instance for container operations"
+  type        = bool
+  default     = false
 }
 
 #==============================================================================

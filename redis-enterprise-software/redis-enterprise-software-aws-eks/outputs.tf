@@ -123,6 +123,40 @@ output "ebs_csi_driver_version" {
 }
 
 #==============================================================================
+# EC2 BASTION OUTPUTS (if created)
+#==============================================================================
+
+output "bastion_instance_id" {
+  description = "EC2 bastion instance ID"
+  value       = var.create_bastion ? module.bastion[0].instance_id : null
+}
+
+output "bastion_public_ip" {
+  description = "EC2 bastion public IP address"
+  value       = var.create_bastion ? module.bastion[0].public_ip : null
+}
+
+output "bastion_ssh_command" {
+  description = "SSH command to connect to bastion instance"
+  value       = var.create_bastion ? module.bastion[0].ssh_command : "Bastion not deployed (set create_bastion=true)"
+}
+
+output "bastion_connection_info" {
+  description = "Complete bastion connection information"
+  value       = var.create_bastion ? module.bastion[0].connection_info : null
+}
+
+output "bastion_available_tools" {
+  description = "Tools installed on bastion instance"
+  value       = var.create_bastion ? module.bastion[0].available_tools : null
+}
+
+output "bastion_usage_guide" {
+  description = "Quick reference for using the bastion instance"
+  value       = var.create_bastion ? module.bastion[0].usage_examples.ssh : "Bastion not deployed (set create_bastion=true in terraform.tfvars)"
+}
+
+#==============================================================================
 # KUBECTL CONFIG
 #==============================================================================
 
@@ -145,6 +179,7 @@ output "access_instructions" {
 
     ACCESS MODE: ${var.redis_ui_service_type == "ClusterIP" ? "Internal (ClusterIP)" : "External (LoadBalancer)"}
     DATABASE SERVICE: ${var.redis_database_service_type == "ClusterIP" ? "Internal (ClusterIP)" : "External (LoadBalancer)"}
+    EXTERNAL ACCESS: ${var.external_access_type != "none" ? "Enabled via ${upper(var.external_access_type)}" : "Disabled"}
 
     1. CONFIGURE KUBECTL
        aws eks update-kubeconfig --region ${var.aws_region} --name ${local.name_prefix}
@@ -172,7 +207,8 @@ output "access_instructions" {
     7. GET ADMIN PASSWORD (if forgotten)
        kubectl get secret ${module.redis_cluster.admin_credentials_secret_name} -n ${module.redis_operator.namespace} -o jsonpath='{.data.password}' | base64 -d
 
-    ${var.redis_enable_ingress ? "\n    INGRESS ENABLED:\n    - API FQDN: ${var.redis_api_fqdn_url}\n    - DB FQDN Suffix: ${var.redis_db_fqdn_suffix}\n    - Method: ${var.redis_ingress_method}\n" : "\n    For external access via ingress, set redis_enable_ingress = true in terraform.tfvars\n"}
+    ${var.external_access_type == "nginx-ingress" && !var.enable_tls ? "\n    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n    EXTERNAL DATABASE ACCESS (NGINX INGRESS - NON-TLS MODE)\n    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n    ✅ Terraform-managed databases are automatically configured\n    ✅ Fast deployment with on-demand port exposure\n\n    FOR MANUALLY CREATED DATABASES:\n    Run these TWO simple commands after creating a database:\n\n    1. Update TCP ConfigMap:\n       kubectl patch configmap tcp-services -n ingress-nginx \\\\\n         --type merge \\\\\n         -p '{\"data\":{\"<PORT>\":\"redis-enterprise/<SERVICE-NAME>:<PORT>\"}}'\n\n    2. Expose port on NLB:\n       kubectl patch svc ingress-nginx-controller -n ingress-nginx \\\\\n         --type='json' \\\\\n         -p='[{\"op\": \"add\", \"path\": \"/spec/ports/-\", \"value\": {\"name\": \"redis-<PORT>\", \"port\": <PORT>, \"protocol\": \"TCP\", \"targetPort\": <PORT>}}]'\n\n    Example for database on port 15000:\n       kubectl patch configmap tcp-services -n ingress-nginx \\\\\n         --type merge \\\\\n         -p '{\"data\":{\"15000\":\"redis-enterprise/my-db:15000\"}}'\n\n       kubectl patch svc ingress-nginx-controller -n ingress-nginx \\\\\n         --type='json' \\\\\n         -p='[{\"op\": \"add\", \"path\": \"/spec/ports/-\", \"value\": {\"name\": \"redis-15000\", \"port\": 15000, \"protocol\": \"TCP\", \"targetPort\": 15000}}]'\n\n    Then test:\n       redis-cli -h <NLB-DNS> -p 15000 PING\n    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" : ""}
+    ${var.redis_enable_ingress ? "\n    INGRESS ENABLED:\n    - API FQDN: ${var.redis_api_fqdn_url}\n    - DB FQDN Suffix: ${var.redis_db_fqdn_suffix}\n    - Method: ${var.redis_ingress_method}\n" : ""}
     ════════════════════════════════════════════════════════════════════════════
   EOT
 }

@@ -195,8 +195,9 @@ create_sample_database = true     # Create a demo database for testing
 sample_db_name         = "demo"   # Database name
 sample_db_port         = 12000    # Database port (10000-19999)
 # sample_db_memory is set above in Redis Flex config section (100MB or 120GB)
-sample_db_replication  = true     # Enable HA replication (default: enabled)
-sample_db_password     = "admin"  # Database password (alphanumeric only)
+sample_db_replication  = true       # Enable HA replication (default: enabled)
+sample_db_password     = "admin"    # Database password (alphanumeric only)
+sample_db_tls_mode     = "disabled" # TLS mode: disabled, enabled, replica_ssl (REQUIRED: enabled for NGINX Ingress TLS mode)
 
 #==============================================================================
 # REDIS TEST CLIENT (Optional - For testing connectivity & performance)
@@ -211,9 +212,90 @@ create_test_client = false # Set to true to deploy test client pod
 # test_client_memory_request = "512Mi" # Memory request (default)
 # test_client_memory_limit   = "1Gi"   # Memory limit (default)
 
-# Service Type for Sample Database
-sample_db_service_type = "ClusterIP" # ClusterIP (internal) or LoadBalancer (external)
+#==============================================================================
+# EXTERNAL ACCESS CONFIGURATION
+#==============================================================================
+# Redis databases can have THREE access patterns:
+#
+# 1. INTERNAL ONLY (default):
+#    - external_access_type = "none"
+#    - Creates: "demo" service (ClusterIP) - accessible only within K8s cluster
+#
+# 2. EXTERNAL ONLY:
+#    - external_access_type = "nlb" or "nginx-ingress"
+#    - expose_redis_databases = true
+#    - Creates: "demo-external" service (LoadBalancer/Ingress) - accessible from internet
+#    - Original "demo" service (ClusterIP) still exists for internal access
+#
+# 3. BOTH INTERNAL AND EXTERNAL (recommended):
+#    - external_access_type = "nlb" or "nginx-ingress"
+#    - expose_redis_databases = true
+#    - Creates: BOTH "demo" (ClusterIP) AND "demo-external" (LoadBalancer/Ingress)
+#    - Internal apps use: demo.redis-enterprise.svc.cluster.local:12000
+#    - External apps use: NLB DNS or redis domain (see below)
+#==============================================================================
+
+# Choose external access method:
+# - "nlb": AWS Network Load Balancer (~$16/month per service, production-ready)
+# - "nginx-ingress": NGINX Ingress Controller (~$16/month total, cost-effective at scale)
+# - "none": Internal access only (ClusterIP services, default)
+external_access_type = "none"  # Change to "nlb" or "nginx-ingress" to enable external access
+
+# What to expose externally (only applies when external_access_type != "none")
+expose_redis_ui        = false  # Set to true to expose Redis Enterprise UI
+expose_redis_databases = false  # Set to true to expose Redis databases (creates -external services)
+
+# NGINX Ingress settings (when external_access_type = "nginx-ingress")
+# ingress_domain       = "redis.example.com"  # Your domain for ingress (REQUIRED for NGINX mode)
+# nginx_instance_count = 2                    # Number of NGINX replicas for HA
+# enable_tls           = false                # false = testing (no TLS), true = production (requires TLS on databases)
+
+#==============================================================================
+# DATABASE SERVICE CONFIGURATION
+#==============================================================================
+# NOTE: When using external_access module (nlb or nginx-ingress), this setting is IGNORED
+#       The external_access module creates separate "-external" services while keeping
+#       the original ClusterIP service for internal access (both exist simultaneously)
+#
+# Only set this to "LoadBalancer" if NOT using the external_access module
+sample_db_service_type = "ClusterIP" # ClusterIP (internal) - recommended
 # sample_db_service_port = 0         # Custom service port (0 = use database_port)
+
+#==============================================================================
+# EXAMPLE CONFIGURATIONS FOR DATABASE ACCESS
+#==============================================================================
+#
+# EXAMPLE 1: Internal access only (default, free)
+# external_access_type = "none"
+# Result: Database accessible at demo.redis-enterprise.svc.cluster.local:12000 (inside cluster only)
+#
+# EXAMPLE 2: Both internal AND external access via NLB
+# external_access_type = "nlb"
+# expose_redis_databases = true
+# Result:
+#   - Internal: demo.redis-enterprise.svc.cluster.local:12000
+#   - External: <nlb-dns-name>:12000 (get with: kubectl get svc demo-external -n redis-enterprise)
+#
+# EXAMPLE 3: Both internal AND external access via NGINX Ingress (non-TLS)
+# external_access_type = "nginx-ingress"
+# expose_redis_databases = true
+# ingress_domain = "redis.example.com"
+# enable_tls = false
+# Result:
+#   - Internal: demo.redis-enterprise.svc.cluster.local:12000
+#   - External: <nginx-nlb-dns>:12000 (get with: kubectl get svc ingress-nginx-controller -n ingress-nginx)
+#
+# EXAMPLE 4: Both internal AND external access via NGINX Ingress (TLS, production)
+# external_access_type = "nginx-ingress"
+# expose_redis_databases = true
+# ingress_domain = "redis.example.com"
+# enable_tls = true
+# sample_db_tls_mode = "enabled"  # REQUIRED for TLS mode
+# Result:
+#   - Internal: demo.redis-enterprise.svc.cluster.local:12000 (no TLS)
+#   - External: demo-redis.example.com:443 (with TLS, requires DNS CNAME setup)
+#
+#==============================================================================
 
 # Advanced Database Options
 sample_db_shard_count = 1          # Number of shards (1 = single shard, default)

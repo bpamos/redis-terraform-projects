@@ -50,3 +50,8 @@ terraform.rc
 *.pfx
 .env
 .env.*
+
+# Generated configuration files (from monitoring module)
+modules/redis_enterprise_monitoring/generated/*.yml
+modules/redis_enterprise_monitoring/generated/*.yaml
+!modules/redis_enterprise_monitoring/generated/.gitkeep

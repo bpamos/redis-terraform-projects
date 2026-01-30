@@ -695,46 +695,101 @@ kubectl get rec redis-ent-eks -n redis-enterprise -o yaml
 kubectl get events -n redis-enterprise --sort-by='.lastTimestamp'
 ```
 
-## 🌐 Adding External Access (Optional)
+## 🌐 External Access (Optional)
 
-By default, services use ClusterIP for internal-only access (per Redis Enterprise K8s docs).
+By default, services use ClusterIP for internal-only access (per Redis Enterprise K8s docs). For external access, this project provides **automated Terraform modules** following official Redis Enterprise documentation.
 
-### To Add External Access via Ingress:
+**See [EXTERNAL-ACCESS.md](EXTERNAL-ACCESS.md) for complete documentation.**
 
-1. **Install NGINX Ingress Controller**
-   ```bash
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/aws/deploy.yaml
-   ```
+### Quick Start: Enable External Access
 
-2. **Create Ingress Resource**
-   ```yaml
-   apiVersion: networking.k8s.io/v1
-   kind: Ingress
-   metadata:
-     name: redis-demo-ingress
-     namespace: redis-enterprise
-     annotations:
-       kubernetes.io/ingress.class: nginx
-       nginx.ingress.kubernetes.io/ssl-passthrough: "true"
-   spec:
-     rules:
-     - host: redis-demo.yourdomain.com
-       http:
-         paths:
-         - path: /
-           pathType: ImplementationSpecific
-           backend:
-             service:
-               name: demo
-               port:
-                 name: redis
-   ```
+Choose one of three options:
 
-3. **Update DNS**
-   - Point `redis-demo.yourdomain.com` to the Ingress LoadBalancer endpoint
-   - Get endpoint: `kubectl get svc -n ingress-nginx ingress-nginx-controller`
+#### Option 1: NGINX Ingress (Recommended for Production)
 
-See [Redis Enterprise Kubernetes Networking docs](https://redis.io/docs/latest/operate/kubernetes/networking/) for details.
+**Best for:** Multiple databases, production deployments, cost optimization
+
+```hcl
+# In terraform.tfvars
+external_access_type = "nginx-ingress"
+expose_redis_ui        = true
+expose_redis_databases = true
+ingress_domain         = "redis.example.com"
+enable_tls             = false  # Start with testing mode
+```
+
+**What you get:**
+- ✅ Single AWS NLB (~$16/month total)
+- ✅ NGINX Ingress Controller (automated deployment)
+- ✅ TLS mode (production) or non-TLS mode (testing)
+- ✅ SNI-based routing for multiple databases
+- ✅ Follows [Redis Enterprise official documentation](https://redis.io/docs/latest/operate/kubernetes/networking/ingress/)
+
+**Cost:** ~$16/month (single NLB for all services)
+
+#### Option 2: NLB (Simple Layer 4 Load Balancing)
+
+**Best for:** Simple deployments, getting started quickly
+
+```hcl
+# In terraform.tfvars
+external_access_type = "nlb"
+expose_redis_ui        = true
+expose_redis_databases = true
+```
+
+**What you get:**
+- ✅ AWS Network Load Balancer per service
+- ✅ Simple setup, no additional configuration
+- ✅ Low latency (Layer 4)
+
+**Cost:** ~$16/month per service (UI + each database)
+
+#### Option 3: Internal Only (Default)
+
+```hcl
+# In terraform.tfvars
+external_access_type = "none"
+```
+
+Access via `kubectl port-forward` or from within the cluster only.
+
+### Deployment
+
+```bash
+# Update terraform.tfvars with your choice above, then:
+terraform apply
+
+# Get access details
+terraform output
+```
+
+### Access Examples
+
+**After deployment with NGINX Ingress (non-TLS mode):**
+```bash
+# Get NLB DNS
+NLB_DNS=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+
+# Connect to database
+redis-cli -h $NLB_DNS -p 12000 -a admin
+```
+
+**With TLS mode enabled:**
+```bash
+# Requires DNS configuration first (see EXTERNAL-ACCESS.md)
+redis-cli -h demo-redis.example.com -p 443 -a admin \
+  --tls \
+  --sni demo-redis.example.com
+```
+
+See **[EXTERNAL-ACCESS.md](EXTERNAL-ACCESS.md)** for:
+- Complete configuration guide
+- Architecture diagrams
+- TLS setup instructions
+- Client connection examples (Python, Node.js, redis-cli)
+- Troubleshooting
+- Cost comparisons
 
 ## 🔒 Security Notes
 

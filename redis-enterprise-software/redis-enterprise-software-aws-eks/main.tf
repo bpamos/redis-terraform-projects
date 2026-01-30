@@ -238,6 +238,9 @@ module "redis_database" {
   # Database password
   database_password = var.sample_db_password
 
+  # TLS configuration
+  tls_mode = var.sample_db_tls_mode
+
   # Service type configuration
   database_service_type = var.sample_db_service_type
   database_service_port = var.sample_db_service_port
@@ -289,4 +292,91 @@ module "redis_test_client" {
   redis_cluster_ready = module.redis_database
 
   depends_on = [module.redis_database]
+}
+
+#==============================================================================
+# EXTERNAL ACCESS (Optional)
+#==============================================================================
+# Provides external access to Redis Enterprise cluster and databases
+# Supports NLB (now) and NGINX Ingress (Phase 2)
+#==============================================================================
+
+module "external_access" {
+  source = "./modules/external_access"
+
+  # Only deploy if external access is enabled
+  count = var.external_access_type != "none" ? 1 : 0
+
+  external_access_type = var.external_access_type
+  namespace            = module.redis_operator.namespace
+
+  # Redis Enterprise UI
+  redis_ui_service_name = "${var.cluster_name}-ui"
+  expose_redis_ui       = var.expose_redis_ui
+
+  # Redis Enterprise Databases
+  redis_db_services = var.create_sample_database ? {
+    "${var.sample_db_name}" = {
+      port         = var.sample_db_port
+      service_name = var.sample_db_name
+    }
+  } : {}
+  expose_redis_databases = var.expose_redis_databases
+
+  # NGINX Ingress settings
+  ingress_domain       = var.ingress_domain
+  nginx_instance_count = var.nginx_instance_count
+  enable_tls           = var.enable_tls
+
+  tags = local.tags
+
+  depends_on = [module.redis_cluster, module.redis_database]
+}
+
+#==============================================================================
+# EC2 BASTION (Optional)
+#==============================================================================
+# EC2 bastion instance for Redis testing, troubleshooting, and admin tasks
+# Includes: redis-cli, memtier_benchmark, kubectl, AWS CLI
+#==============================================================================
+
+module "bastion" {
+  source = "../../modules/ec2_bastion"
+
+  # Only deploy if bastion is enabled
+  count = var.create_bastion ? 1 : 0
+
+  name_prefix = var.user_prefix
+  owner       = var.owner
+  project     = "redis-enterprise-eks"
+
+  # Networking - deploy in public subnet for external access
+  vpc_id                  = module.vpc.vpc_id
+  subnet_id               = module.vpc.public_subnet_ids[0]
+  key_name                = var.ec2_key_name
+  ssh_private_key_path    = var.ssh_private_key_path
+  associate_public_ip     = var.bastion_associate_public_ip
+  ssh_cidr_blocks         = var.bastion_ssh_cidr_blocks
+  instance_type           = var.bastion_instance_type
+
+  # Install kubectl and AWS CLI for EKS management
+  install_kubectl = true
+  install_aws_cli = true
+  install_docker  = var.bastion_install_docker
+
+  # EKS cluster configuration
+  eks_cluster_name = module.eks.cluster_name
+  aws_region       = var.aws_region
+
+  # Redis endpoints for testing (using internal service endpoint)
+  redis_endpoints = var.create_sample_database ? {
+    "${var.sample_db_name}" = {
+      endpoint = "${var.sample_db_name}.${module.redis_operator.namespace}.svc.cluster.local:${var.sample_db_port}"
+      password = var.sample_db_password
+    }
+  } : {}
+
+  tags = local.tags
+
+  depends_on = [module.eks, module.redis_database, module.external_access]
 }
